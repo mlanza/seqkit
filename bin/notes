@@ -108,50 +108,30 @@ async function callLogseq(method, args) {
   return result
 }
 
-// Collect prerequisites recursively using datalog query
-async function collectPrerequisites(named, debug = false, seen = []) {
-  // Get normalized name for this topic
-  const names = await getNames(named);
-  if (!names) {
-    if (debug) {
-      console.error(`No page found for: ${topic}`);
+async function collectPrerequisites(startName) {
+
+  const seen = new Set();
+  const result = [];
+
+  async function dfs(startName) {
+    const names = await getNames(startName);
+    const {name} = names;
+
+    if (seen.has(name)) return;          // dedupe + short-circuit
+
+    seen.add(name);
+    result.push(name);                   // keep "first name comes up top" order
+
+    const query = `[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`;
+    const results = await callLogseq('logseq.DB.datascriptQuery', [query]);
+    const prereqs = results?.[0]?.[0]?.properties?.prerequisites || [];
+    for (const prereqName of prereqs) {
+      await dfs(prereqName);             // nesting until leaf nodes
     }
-    return [];
-  }
-  const {name} = names;
-  const topic = name;
-
-  // Query to get page properties including prerequisites
-  const query = `[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${topic}"]]`;
-  const result = await callLogseq('logseq.DB.datascriptQuery', [query]);
-
-  if (!result || result.length === 0) {
-    return [];
   }
 
-  const page = result[0]?.[0];
-  if (!page) {
-    return [];
-  }
-
-  const prerequisites = page.properties?.prerequisites || [];
-  const added = difference(seen, [topic, ...prerequisites]);
-  const all = [...seen, ...added];
-
-  console.log({added, all});
-
-  const xs = (await Promise.all(added.map(async function(item){
-    return await collectPrerequisites(item, debug, all);
-  }))).flat();
-
-  //const ys = Array.from(new Set(all.concat(xs)));
-
-  return all.concat(xs);
-}
-
-function difference(setA, arrB) {
-  const set = new Set(setA);
-  return arrB.filter(x => !set.has(x))
+  await dfs(startName);
+  return result;
 }
 
 async function piped(f){
@@ -696,8 +676,7 @@ function prereq(options){
         Deno.exit(1);
       }
 
-      const results = await collectPrerequisites(name, options.debug);
-
+      const results = await collectPrerequisites(name);
       // Output results
       results.forEach(topic => console.log(topic));
     } catch (error) {
