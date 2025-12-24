@@ -1,0 +1,116 @@
+#!/usr/bin/env deno run --allow-net --allow-env --allow-read
+import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
+
+const NOTES_ENDPOINT = Deno.env.get('NOTES_ENDPOINT') || '';
+const NOTES_TOKEN = Deno.env.get('NOTES_TOKEN') || '';
+
+async function callLogseq(method, args) {
+  const payload = { method }
+  if (args) {
+    payload.args = args
+  }
+
+  const response = await fetch(NOTES_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${NOTES_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+  }
+
+  const result = await response.json()
+
+  if (result && result.error) {
+    throw new Error(result.error)
+  }
+
+  return result
+}
+
+async function getNames(given){
+  const page = await callLogseq('logseq.Editor.getPage', [given]);
+  if (!page) return null;
+  const name = page?.originalName || given;
+  const journal = page?.['journal?'] || false;
+  const names = {name};
+  return names;
+}
+
+// The key recursive function - collects all prerequisites for a topic
+async function collectPrerequisites(topic, seen = new Set()) {
+  // Get normalized name for this topic
+  const names = await getNames(topic);
+  if (!names) {
+    return [];
+  }
+  const {name} = names;
+  const currentTopic = name;
+
+  // Check if this topic has already been processed
+  if (seen.has(currentTopic)) {
+    return [];
+  }
+
+  // Mark this topic as seen to prevent infinite recursion
+  seen.add(currentTopic);
+
+  // Query to get the page properties including prerequisites
+  const query = `[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${currentTopic}"]]`;
+  const result = await callLogseq('logseq.DB.datascriptQuery', [query]);
+  
+  if (!result || result.length === 0) {
+    return [];
+  }
+
+  const page = result[0]?.[0];
+  if (!page) {
+    return [];
+  }
+
+  const prerequisites = page.properties?.prerequisites || [];
+  const results = [currentTopic];
+
+  // Recursively collect all prerequisites
+  for (const prereq of prerequisites) {
+    // If prerequisite is an array, handle each element
+    const prereqArray = Array.isArray(prereq) ? prereq : [prereq];
+    
+    for (const prereqItem of prereqArray) {
+      // Recursively get prerequisites of this prerequisite
+      const subPrereqs = await collectPrerequisites(prereqItem, seen);
+      results.push(...subPrereqs);
+    }
+  }
+
+  return results;
+}
+
+const program = new Command()
+  .name('prerequisites')
+  .description('Recursively list prerequisites for a topic')
+  .arguments('<topic:string>')
+  .option('--debug', 'Enable debug output')
+  .action(async (options, topic) => {
+    try {
+      if (options.debug) {
+        console.error(`Collecting prerequisites for: ${topic}`);
+      }
+
+      const results = await collectPrerequisites(topic);
+      
+      // Output results
+      results.forEach(name => console.log(name));
+    } catch (error) {
+      console.error('Error:', error.message);
+      Deno.exit(1);
+    }
+  });
+
+if (import.meta.main) {
+  await program.parse();
+}
