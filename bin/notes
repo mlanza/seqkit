@@ -108,121 +108,64 @@ async function callLogseq(method, args) {
   return result
 }
 
-// Extract prerequisites from page content
-function extractPrerequisites(content) {
-  const lines = content.split('\n');
-  const prereqLine = lines.find(line => line.startsWith('prerequisites::'));
-
-  if (!prereqLine) {
-    return [];
-  }
-
-  // Extract the part after "prerequisites::"
-  const prereqPart = prereqLine.replace(/^prerequisites::\s*/, '');
-
-  // Remove [[ and ]] from each wikilink and handle comma separation
-  // First replace commas with newlines, then remove brackets, then trim whitespace
-  return prereqPart
-    .split(',')
-    .map(item => item
-      .replace(/\[\[/g, '')
-      .replace(/\]\]/g, '')
-      .trim()
-    )
-    .filter(item => item.length > 0);
-}
-
-// Collect prerequisites recursively using lq's callLogseq function
-async function collectPrerequisites(topic, debug = false, seenPages = new Set([])) {
-  const names = await getNames(topic);
-  if (!names) {
-    return [];
-  }
-  const {name} = names;
-  const currentTopic = name;
-
+// Collect prerequisites recursively using datalog query
+async function collectPrerequisites(topic, debug = false, seen = new Set()) {
   if (debug) {
-    console.error(`Collecting prerequisites for: ${currentTopic} (seen: ${seenPages})`);
+    console.error(`Collecting prerequisites for: ${topic} (seen: ${Array.from(seen)})`);
   }
 
-  // Check if this page has already been seen
-  if (seenPages.has(currentTopic)) {
+  if (seen.has(topic)) {
     if (debug) {
-      console.error(`Already seen: ${currentTopic}`);
+      console.error(`Already seen: ${topic}`);
     }
     return [];
   }
 
-  // Add current page to seen pages
-  seenPages.add(currentTopic);
-
-  try {
-    // Get page content using lq's callLogseq function
-    const result = await callLogseq('logseq.Editor.getPageBlocksTree', [currentTopic]);
-
-    if (!result || !Array.isArray(result)) {
-      if (debug) {
-        console.error(`Failed to load: ${currentTopic}`);
-      }
-      // Still return the current topic even if page fails to load
-      return [currentTopic];
-    }
-
-    // Convert block tree to text content
-    const content = result.map(block => {
-      if (block.content) {
-        return block.content;
-      }
-      return '';
-    }).join('\n');
-
-    // Extract prerequisites from this page
-    const prereqs = extractPrerequisites(content);
-
-    if (debug && prereqs.length > 0) {
-      console.error(`Found prerequisites for ${currentTopic}: ${prereqs.join(', ')}`);
-    }
-
-    if (prereqs.length === 0) {
-      if (debug) {
-        console.error(`No prerequisites found for: ${currentTopic}`);
-      }
-      // Still return the current topic even if no prerequisites
-      return [currentTopic];
-    }
-
-    // Output current topic (match bash version's immediate output)
-    const results = [currentTopic];
-
-    // Process each prerequisite recursively
-    for (const prereq of prereqs) {
-      const prereqResults = await collectPrerequisites(prereq, debug, seenPages);
-      results.push(...prereqResults);
-    }
-
-    return results;
-  } catch (error) {
+  // Query to get the page properties including prerequisites
+  const query = `[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${topic}"]]`;
+  const result = await callLogseq('logseq.DB.datascriptQuery', [query]);
+  
+  if (!result || result.length === 0) {
     if (debug) {
-      console.error(`Error loading ${currentTopic}: ${error.message}`);
+      console.error(`No page found for: ${topic}`);
     }
-    // Still return the current topic even if page fails to load
-    return [currentTopic];
-  }
-}
-
-// Remove duplicates while preserving order
-function removeDuplicates(lines) {
-  const seen = new Set();
-  const uniqueLines = [];
-
-  for (const line of lines) {
-    if (line && !seen.has(line)) {
-      uniqueLines.push(line);
-      seen.add(line);
-    }
+    return [];
   }
 
-  return uniqueLines;
+  const page = result[0]?.[0];
+  if (!page) {
+    if (debug) {
+      console.error(`No page data for: ${topic}`);
+    }
+    return [];
+  }
+
+  // Mark this topic as seen to prevent infinite recursion
+  seen.add(topic);
+
+  const prerequisites = page.properties?.prerequisites || [];
+  
+  // Add the current topic first, then its prerequisites
+  const results = [topic];
+
+  // Recursively collect all prerequisites
+  for (const prereq of prerequisites) {
+    // If prerequisite is an array, handle each element
+    const prereqArray = Array.isArray(prereq) ? prereq : [prereq];
+    
+    for (const prereqItem of prereqArray) {
+      // Skip if already seen
+      if (seen.has(prereqItem)) {
+        continue;
+      }
+
+      // Recursively get prerequisites of this prerequisite
+      const subPrereqs = await collectPrerequisites(prereqItem, debug, seen);
+      results.push(...subPrereqs);
+    }
+  }
+
+  return results;
 }
 
 async function piped(f){
@@ -767,10 +710,10 @@ function prereq(options){
         Deno.exit(1);
       }
 
-      const allPrereqs = await collectPrerequisites(name, options.debug);
-      const uniquePrereqs = removeDuplicates(allPrereqs);
-
-      uniquePrereqs.forEach(name => console.log(name));
+      const results = await collectPrerequisites(name, options.debug);
+      
+      // Output results
+      results.forEach(topic => console.log(topic));
     } catch (error) {
       console.error('Error:', error.message);
       Deno.exit(1);
