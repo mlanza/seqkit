@@ -160,6 +160,7 @@ async function piped(f){
   }
 }
 
+
 function pipeable(g){
   return async function (options, ...payload){
     const f = g(options);
@@ -667,7 +668,7 @@ function search(options){
   }
 }
 
-function prereq(options){
+function prereq(){
   return async function (name){
     try {
       if (!name) {
@@ -677,8 +678,9 @@ function prereq(options){
       }
 
       const results = await collectPrerequisites(name);
-      // Output results
-      results.forEach(topic => console.log(topic));
+      results.forEach(name => console.log(name));
+      // Return results instead of directly outputting them
+      return results;
     } catch (error) {
       console.error('Error:', error.message);
       Deno.exit(1);
@@ -777,8 +779,9 @@ function has(options, prop = null){
 
   const exec = prop ? fn.bind(null, prop) : fn;
 
-  return async function(options, ...args){
+  return async function(...args){
     const {silent, format = "md"} = options;
+    //console.log({silent, options, args})
     const result = await exec(options, ...args);
     if (!silent) {
       if (format == "md") {
@@ -990,7 +993,6 @@ program
   .command('prereq')
   .description('Recursively list page prerequisites')
   .arguments(demand("name"))
-  .option('--debug', 'Enable debug output to stderr')
   .action(pipeable(prereq));
 
 program
