@@ -219,103 +219,12 @@ function nestedJsonToMarkdown(blocks, level = 0) {
       }
     }
 
-    // Recursively process children
     if (children && children.length > 0) {
       lines.push(...nestedJsonToMarkdown(children, level + 1));
     }
   });
 
   return lines;
-}
-
-// Parse Logseq blocks from file content
-function parseLogseqBlocks(content) {
-  const lines = content.split('\n');
-  const blocks = [];
-  const stack = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmedLine = line.trim();
-
-    // Skip empty lines and collapsed properties
-    if (!trimmedLine || trimmedLine === 'collapsed:: true') {
-      continue;
-    }
-
-    // Calculate indentation level - Logseq uses 2 spaces per level
-    // Convert tabs to spaces: 1 tab = 2 spaces for Logseq
-    let spaces = 0;
-    let tabIndex = 0;
-
-    // Count leading spaces before any tabs
-    while (tabIndex < line.length && line[tabIndex] === ' ') {
-      spaces++;
-      tabIndex++;
-    }
-
-    // Count tabs and convert to spaces (1 tab = 2 spaces in Logseq)
-    let tabs = 0;
-    while (tabIndex < line.length && line[tabIndex] === '\t') {
-      tabs++;
-      tabIndex++;
-    }
-
-    const level = Math.floor((spaces + (tabs * 2)) / 2);
-
-    const content = trimmedLine; // markerMatch ? markerMatch[2] : trimmedLine;
-
-    // Create block object
-    const block = {
-      id: `block-${i}`,
-      content: content,
-      level: level,
-      marker: null,
-      priority: null,
-      children: []
-    };
-
-    // Place block in hierarchy
-    while (stack.length > level) {
-      stack.pop();
-    }
-
-    if (stack.length === 0) {
-      blocks.push(block);
-    } else {
-      stack[stack.length - 1].children.push(block);
-    }
-
-    stack.push(block);
-  }
-
-  return blocks;
-}
-
-// Render Logseq blocks back to markdown
-function renderLogseqBlocks(blocks, level = 0) {
-  const lines = [];
-
-  blocks.forEach(block => {
-    if (block.content) {
-      // Preserve Logseq properties at the top level
-      if (level === 0 && block.content.includes('::')) {
-        lines.push(block.content);
-      } else {
-        // Add proper indentation based on level
-        const indent = '  '.repeat(level);
-        const marker = block.marker || '-';
-        lines.push(`${indent}${marker} ${block.content}`);
-      }
-    }
-
-    // Recursively process children
-    if (block.children && block.children.length > 0) {
-      lines.push(...renderLogseqBlocks(block.children, level + 1));
-    }
-  });
-
-  return lines.join('\n');
 }
 
 function page(options){
