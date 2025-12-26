@@ -710,7 +710,13 @@ function demand(...whats){
   return /*isPiped ?*/ whats.map(what => `[${what}]`).join(' ') /*: whats.map(what => `<${what}>`).join(' ')*/;
 }
 
-//qryProps("tags", ["Employing Agents"]).fork(abort, println);
+function tskGetAllPages(type = "all"){
+  return tskLogseq('logseq.Editor.getAllPages').map(function(results){
+    return type == 'all' ? results : type == "journal" ? results.filter(item => !!item["journal?"]) : results.filter(item => !item["journal?"]);
+  }).map(results => results.map(page => page?.originalName));
+}
+
+const getAllPages = comp(promise, tskGetAllPages);
 
 const program = new Command()
   .name('notes')
@@ -724,23 +730,11 @@ program
   .option('-t, --type <type:string>', 'Page type (regular|journal|all)', 'regular')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(async (options) => {
-    try {
-      const format = options.json ? 'json' : (options.format || 'md');
-      const type = options.type || 'regular';
-      const results = await callLogseq('logseq.Editor.getAllPages');
-      const selected = type == 'all' ? results : type == "journal" ? results.filter(item => !!item["journal?"]) : results.filter(item => !item["journal?"]);
-      if (format === 'json') {
-        console.log(JSON.stringify(selected, null, 2))
-      } else if (format === 'md') {
-        selected.map(item => item.originalName).forEach(name => console.log(name));
-      } else {
-        throw new Error(`Unknown format: ${format}`)
-      }
-    } catch (error) {
-      abort(error);
+  .action(pipeable(function(options){
+    return function(){
+      return tskGetAllPages(options.type);
     }
-  });
+  }));
 
 program
   .command('page')
