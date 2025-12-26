@@ -529,10 +529,10 @@ function alias(options){
   return has(options, "alias");
 }
 
-async function aka(...args){
-  const result = await promise(alias({format: "md"})(...args));
+const aka = comp(async function(results){
+  const result = await results;
   return result?.[0];
-}
+}, promise, alias({format: "md"}));
 
 function qryProps(prop, vals, mode = "any"){
   return new Task(function(reject, resolve){
