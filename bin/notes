@@ -716,8 +716,6 @@ function tskGetAllPages(type = "all"){
   }).map(results => results.map(page => page?.originalName));
 }
 
-const getAllPages = comp(promise, tskGetAllPages);
-
 const program = new Command()
   .name('notes')
   .description('Retrieve and/or append to pages and journals')
