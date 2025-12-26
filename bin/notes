@@ -150,41 +150,36 @@ async function getNames(given){
 
 function tskLogseq(method, args){
   return new Task(async function(reject, resolve){
-    try {
-      const result = await callLogseq(method, args);
-      resolve(result);
-    } catch (ex) {
-      reject(ex);
+    const payload = { method }
+    if (args) {
+      payload.args = args
     }
-  })
+
+    const response = await fetch(NOTES_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${NOTES_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      reject(new Error(`HTTP ${response.status}: ${response.statusText}`));
+    }
+
+    const result = await response.json()
+
+    if (result && result.error) {
+      reject(new Error(result.error));
+    }
+
+    resolve(result);
+  });
 }
 
-async function callLogseq(method, args) {
-  const payload = { method }
-  if (args) {
-    payload.args = args
-  }
-
-  const response = await fetch(NOTES_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${NOTES_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-  }
-
-  const result = await response.json()
-
-  if (result && result.error) {
-    throw new Error(result.error)
-  }
-
-  return result
+function callLogseq(method, args) {
+  return promise(tskLogseq(method, args));
 }
 
 function qryPrerequisites(name){
