@@ -253,7 +253,7 @@ function pipeable(g){
 
 async function piped(f){
   const decoder = new TextDecoder()
-  let stdinContent = ''
+  const stdin = [];
   const buffer = new Uint8Array(1024)
 
   while (true) {
@@ -261,16 +261,18 @@ async function piped(f){
     if (n === null) {
       break
     }
-    stdinContent += decoder.decode(buffer.subarray(0, n))
+    stdin.push(decoder.decode(buffer.subarray(0, n)));
   }
 
-  if (stdinContent === '') {
+  if (!stdin.length) {
     throw new Error('No inputs')
   }
 
-  const lines = stdinContent.split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0);
+  const lines = stdin.
+    join('').
+    split('\n').
+    map(line => line.trim()).
+    filter(line => line.length > 0);
 
   for (const line of lines) {
     await f(line);
