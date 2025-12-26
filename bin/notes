@@ -720,7 +720,7 @@ const getAllPages = comp(promise, tskGetAllPages);
 
 const program = new Command()
   .name('notes')
-  .description('Access and append to pages and journals')
+  .description('Retrieve or append to pages and journals')
   .version('1.0.0')
   .stopEarly();
 
