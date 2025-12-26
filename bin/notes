@@ -371,9 +371,14 @@ function nestedJsonToMarkdown(blocks, level = 0) {
   return lines;
 }
 
+const shorthand = {
+  "@task": "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)",
+  "@link": '^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+"[^"\\r\\n]*")?\\s*\\))\\s*$'
+}
+
 function keeping(patterns, hit = true){
   const miss = !hit;
-  const regexes = (patterns || []).map(pattern => new RegExp(pattern));
+  const regexes = (patterns || []).map(what => shorthand[what] || what).map(pattern => new RegExp(pattern));
   return regexes.length ? function(text){
     for(const re of regexes) {
       if (re.test(text)) {
