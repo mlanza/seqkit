@@ -432,9 +432,10 @@ function search(options){
 }
 
 function path(){
-  return async function(named){
-    const {path} = await getNames(named);
-    console.log(path);
+  return function(name){
+    return tskNames(name).
+      map(({path}) => path).
+      fork(balk, println);
   }
 }
 
