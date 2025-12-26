@@ -531,7 +531,6 @@ function has(options, prop = null){
                      [(get ?props :${prop}) ?prop]
                      ${whereClause}]`;
 
-
       const result = await qry(query);
 
       if (format === 'json') {
