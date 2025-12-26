@@ -1,8 +1,11 @@
 #!/usr/bin/env deno run --allow-net --allow-env --allow-read
 import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
+import { TextLineStream } from "https://deno.land/std/streams/text_line_stream.ts";
+
 import Task from "https://esm.sh/data.task";
 
 async function detectPiped() {
+  return !Deno.isatty(Deno.stdin.rid);
   try {
     // Method 1: Try Deno 2's isTerminal method
     const isTerminal = Deno.stdin.isTerminal();
@@ -277,7 +280,7 @@ function prerequisites(name){
 
 function pipeable(g){
   return async function (options, ...payload){
-    const wasPiped = payload.length === 0 && await detectPiped();
+    const wasPiped = await detectPiped();
     const f = g(options);
     if (wasPiped){
       await piped(async function(arg){
@@ -290,30 +293,14 @@ function pipeable(g){
 }
 
 async function piped(f){
-  const decoder = new TextDecoder()
-  const stdin = [];
-  const buffer = new Uint8Array(1024)
+  const streamed = Deno.
+    stdin.
+    readable.
+    pipeThrough(new TextDecoderStream()).
+    pipeThrough(new TextLineStream());
 
-  while (true) {
-    const n = await Deno.stdin.read(buffer)
-    if (n === null) {
-      break
-    }
-    stdin.push(decoder.decode(buffer.subarray(0, n)));
-  }
-
-  if (!stdin.length) {
-    throw new Error('No inputs')
-  }
-
-  const lines = stdin.
-    join('').
-    split('\n').
-    map(line => line.trim()).
-    filter(line => line.length > 0);
-
-  for (const line of lines) {
-    await f(line);
+  for await (const line of streamed) {
+    f(line)
   }
 }
 
@@ -751,11 +738,13 @@ function fmtBody({heading, format}){
 }
 
 function props(options){
+  const heading = options.heading;
+  const format = options.json ? 'json' : options.format || "md";
   return function(pageName, propName = null){
     return normal(pageName).
       chain(Task.juxt(Task.of, qryPage)).
-      map(fmtProps(options, propName)).
-      map(fmtBody(options));
+      map(fmtProps({format, heading}, propName)).
+      map(fmtBody({format, heading}));
   }
 }
 
@@ -844,7 +833,7 @@ program
   .option('--desc', "With description")
   .option('--json', 'Output JSON format')
   .option('--no-heading', 'Omit H1 heading and trailing blank line for MD format')
-  .action(pipeable(comp(props, normalizeOptions)));
+  .action(pipeable(props));
 
 program
   .command('search')
