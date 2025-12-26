@@ -4,11 +4,20 @@ import Task from "https://esm.sh/data.task";
 
 const isPiped = !Deno.isatty(Deno.stdin.rid);
 
-const comp = (...fns) => (arg) => fns.reduceRight((acc, fn) => fn(acc), arg);
-
 const NOTES_ENDPOINT = Deno.env.get('NOTES_ENDPOINT') || '';
 const NOTES_TOKEN = Deno.env.get('NOTES_TOKEN') || '';
 const NOTES_DIR = Deno.env.get('NOTES_DIR') || '';
+
+const comp = (...fns) => (arg) => fns.reduceRight((acc, fn) => fn(acc), arg);
+
+function println(lines){
+  Array.isArray(lines) ? lines.forEach(line => console.log(line)) : console.log(lines);
+}
+
+function abort(error){
+  error && console.error('Aborted:', error?.message || error);
+  Deno.exit(1);
+}
 
 const take = (xs, n = Infinity) =>
   Array.isArray(xs) ? xs.slice(0, n) : [];
@@ -240,11 +249,6 @@ function pipeable(g){
       await promise(f(...payload).map(fmt(options))).catch(abort).then(println);
     }
   }
-}
-
-function abort(error){
-  error && console.error('Aborted:', error?.message || error);
-  Deno.exit(1);
 }
 
 async function piped(f){
@@ -690,10 +694,6 @@ function fmtBody({heading, format}){
       return lines;
     }
   }
-}
-
-function println(lines){
-  Array.isArray(lines) ? lines.forEach(line => console.log(line)) : console.log(lines);
 }
 
 function props(options){
