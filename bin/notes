@@ -640,27 +640,9 @@ function backlinks(options){
 }
 
 function query(options){
-  const format = options.json ? 'json' : (options.format || 'md');
   const limit = options.limit ? parseInt(options.limit) : Infinity;
-  return async function(query){
-    try {
-      if (!query) {
-        throw new Error('No query provided');
-      }
-
-      const items = await promise(qry(query, limit));
-
-      if (format == "json") {
-        console.log(JSON.stringify(items, null, 2));
-      } else {
-        items.
-          map(item => item?.[0]).
-          map(content => content["replace"] ? content?.replace("\ncollapsed:: true", "")?.replace("\ncollapsed:: false") : content).
-          forEach(item => console.log(item));
-      }
-    } catch (error) {
-      abort(error);
-    }
+  return function(query){
+    return qry(query, limit);
   }
 }
 
@@ -889,7 +871,7 @@ program
   .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', 'none')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(pipeable(query));
+  .action(forkable(query));
 
 if (import.meta.main) {
   if (Deno.args.length === 0) {
