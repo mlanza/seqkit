@@ -726,7 +726,7 @@ function balk(error){
 }
 
 function println(lines){
-  lines.forEach(line => console.log(line));
+  Array.isArray(lines) ? lines.forEach(line => console.log(line)) : console.log(lines);
   Deno.exit(0);
 }
 
