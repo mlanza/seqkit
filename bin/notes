@@ -133,6 +133,17 @@ async function getNames(given){
   return names;
 }
 
+function tskLogseq(method, args){
+  return new Task(async function(reject, resolve){
+    try {
+      const result = await callLogseq(method, args);
+      resolve(result);
+    } catch (ex) {
+      reject(ex);
+    }
+  })
+}
+
 async function callLogseq(method, args) {
   const payload = { method }
   if (args) {
@@ -442,15 +453,10 @@ function page(options){
   }
 }
 
-function search(options){
-  const format = options.json ? 'json' : (options.format || 'md')
-  return async function (term) {
-    try {
-      const result = await callLogseq('logseq.Editor.search', [term])
-      if (format === 'json') {
-        console.log(JSON.stringify(result, null, 2))
-      } else if (format === 'md') {
-        // Extract page IDs; use uniqueness to minimize lookups
+function srch(term){
+  return new Task(function(reject, resolve){
+    tskLogseq('logseq.Editor.search', [term]).
+      fork(reject, async function(result){
         const pageIds = new Set()
         result?.
           blocks?.
@@ -458,27 +464,20 @@ function search(options){
           forEach(id => pageIds.add(id));
 
         const promisedNames =
-          Array.from(pageIds).
+          await Promise.all(Array.from(pageIds).
             map(async function(id){
               try {
                 const pageResult = await callLogseq('logseq.Editor.getPage', [id]);
                 return pageResult?.originalName;
               } catch (ex) {
-                console.error(`Warning: Could not get page ${id}: ${ex.message}`);
-                return null;
+                reject(new Error(`Warning: Could not get page ${id}: ${ex.message}`));
               }
-            });
+            }));
 
-        const names = (await Promise.all(promisedNames)).
-          filter(Boolean).
-          forEach(name => console.log(name));
-      } else {
-        throw new Error(`Unknown format: ${format}`);
-      }
-    } catch (error) {
-      abort(error);
-    }
-  }
+        resolve(promisedNames);
+      });
+
+  });
 }
 
 function path(){
@@ -831,7 +830,7 @@ program
   .arguments(demand("term"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(pipeable(search));
+  .action(forkable(constantly(srch)));
 
 program
   .command('name')
