@@ -184,6 +184,25 @@ async function collectPrerequisites(startName) {
   return result;
 }
 
+function promise(tsk){
+  return new Promise(function(resolve, reject){
+    tsk.fork(reject, resolve);
+  });
+}
+
+function forkable(g){
+  return async function (options, ...payload){
+    const f = g(options);
+    if (isPiped){
+      await piped(async function(arg){
+        await promise(f(arg, ...payload)).catch(balk).then(println);
+      });
+    } else {
+      await promise(f(...payload)).catch(balk).then(println);
+    }
+  }
+}
+
 async function piped(f){
   const decoder = new TextDecoder()
   let stdinContent = ''
@@ -437,8 +456,7 @@ function search(options){
 function path(){
   return function(name){
     return tskNames(name).
-      map(({path}) => path).
-      fork(balk, println);
+      map(({path}) => path);
   }
 }
 
@@ -739,8 +757,7 @@ function props(options){
     return normal(pageName).
       chain(Task.juxt(Task.of, qryPage)).
       map(fmtProps(options, propName)).
-      map(fmtBody(options)).
-      fork(balk, println);
+      map(fmtBody(options));
   }
 }
 
@@ -826,7 +843,7 @@ program
   .command('path')
   .description('The path to the page file')
   .arguments(demand("name"))
-  .action(pipeable(path));
+  .action(forkable(path));
 
 program
   .command('props')
@@ -836,7 +853,7 @@ program
   .option('--desc', "With description")
   .option('--json', 'Output JSON format')
   .option('--no-heading', 'Omit H1 heading and trailing blank line for MD format')
-  .action(pipeable(comp(props, normalizeOptions)));
+  .action(forkable(comp(props, normalizeOptions)));
 
 program
   .command('search')
