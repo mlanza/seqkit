@@ -210,6 +210,9 @@ async function piped(f){
   }
 }
 
+const asThenable = (task) => ({
+  then: (resolve, reject) => task.fork(reject, resolve)
+})
 
 function pipeable(g){
   return async function (options, ...payload){
