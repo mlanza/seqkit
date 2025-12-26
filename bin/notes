@@ -533,7 +533,6 @@ function has(options, prop = null){
 
 
       const result = await qry(query);
-                           //console.log({options, prop, vals, query, result})
 
       if (format === 'json') {
         return result;
