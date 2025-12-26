@@ -507,39 +507,35 @@ function prereq(){
   }
 }
 
-function named(options){
-  const format = options.json ? 'json' : (options.format || 'md')
-  return async function(id){
+function tskNamed(id){
+  return new Task(async function(reject, resolve){
     try {
       let result = await callLogseq('logseq.Editor.getPage', [id]);
 
       // If direct lookup failed and id looks like a number, try to find page by searching all pages
       if (!result && /^\d+$/.test(id)) {
-        try {
-          // Get all pages and find the one with matching numeric ID
-          const allPages = await callLogseq('logseq.Editor.getAllPages')
-          const matchingPage = allPages.find(page => page.id.toString() === id)
-          if (matchingPage) {
-            result = matchingPage
-          }
-        } catch (searchError) {
-          // If search fails, continue with null result
+        // Get all pages and find the one with matching numeric ID
+        const allPages = await callLogseq('logseq.Editor.getAllPages')
+        const matchingPage = allPages.find(page => page.id.toString() === id)
+        if (matchingPage) {
+          result = matchingPage
         }
+      }
+      if (result?.originalName) {
+        resolve(result.originalName);
+      } else {
+        resolve(result);
       }
 
-      if (format === 'json') {
-        console.log(JSON.stringify(result, null, 2))
-      } else if (format === 'md') {
-        if (result && result.originalName) {
-          console.log(result.originalName);
-        }
-        // If no page is found, output nothing (just exit silently)
-      } else {
-        throw new Error(`Unknown format: ${format}`);
-      }
     } catch (error) {
-      abort(error);
+      reject(error);
     }
+  });
+}
+
+function constantly(f){
+  return function(){
+    return f;
   }
 }
 
@@ -844,7 +840,7 @@ program
   .arguments(demand("id|name"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(pipeable(named));
+  .action(forkable(constantly(tskNamed)));
 
 program
   .command('alias')
