@@ -556,9 +556,8 @@ function has(options, prop = null){
     throw new Error('--all and --any options are mutually exclusive');
   }
 
-  const mode = options.any ? 'any' : 'all'; // Default to 'all'
   const fn = async function(prop, ...vals){
-    return await promise(qryProps(prop, vals, mode));
+    return await promise(qryProps(prop, vals, options.any ? 'any' : 'all'));
   }
 
   const exec = prop ? fn.bind(null, prop) : fn;
