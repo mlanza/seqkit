@@ -172,8 +172,7 @@ async function collectPrerequisites(startName) {
     seen.add(name);
     result.push(name);                   // keep "first name comes up top" order
 
-    const query = `[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`;
-    const results = await callLogseq('logseq.DB.datascriptQuery', [query]);
+    const results = await promise(qry(`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`));
     const prereqs = results?.[0]?.[0]?.properties?.prerequisites || [];
     for (const prereqName of prereqs) {
       await dfs(prereqName);             // nesting until leaf nodes
