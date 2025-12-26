@@ -531,6 +531,9 @@ function qryProps(prop, vals, mode = "any"){
     if (!['any', 'all'].includes(mode)){
       reject(new Error(`Mode must be "any" or "all" and was "${mode}".`));
     }
+    if (vals.length === 0) {
+      reject(new Error('At least one prop value is required'));
+    }
     const conditions = vals.map(val => `[(contains? ?prop "${val}")]`).join(' ');
     const whereClause = mode === 'any' ? `(or ${conditions})` : conditions;
     return qry(`[:find (pull ?page [:block/original-name])
@@ -553,27 +556,9 @@ function has(options, prop = null){
     throw new Error('--all and --any options are mutually exclusive');
   }
 
-  const format = options.json ? 'json' : (options.format || 'md');
   const mode = options.any ? 'any' : 'all'; // Default to 'all'
   const fn = async function(prop, ...vals){
-    try {
-      if (vals.length === 0) {
-        throw new Error('At least one prop value is required');
-      }
-
-      const result = await promise(qryProps(prop, vals, mode));
-
-      if (format === 'json') {
-        return result;
-      } else if (format === 'md') {
-        return result;
-      } else {
-        throw new Error(`Unknown format: ${format}`);
-      }
-    } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
-    }
+    return await promise(qryProps(prop, vals, mode));
   }
 
   const exec = prop ? fn.bind(null, prop) : fn;
