@@ -8,6 +8,9 @@ const NOTES_ENDPOINT = Deno.env.get('NOTES_ENDPOINT') || '';
 const NOTES_TOKEN = Deno.env.get('NOTES_TOKEN') || '';
 const NOTES_DIR = Deno.env.get('NOTES_DIR') || '';
 
+const take = (xs, n = Infinity) =>
+  Array.isArray(xs) ? xs.slice(0, n) : [];
+
 function all (tasks) {
   if (!Array.isArray(tasks) || tasks.length === 0) {
     return Task.of([]);
@@ -158,6 +161,23 @@ async function callLogseq(method, args) {
   return result
 }
 
+
+function qryPrerequisites(name){
+  return new Task(function(reject, resolve){
+    qry(`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`).fork(reject, function(results){
+      resolve(results?.[0]?.[0]?.properties?.prerequisites || []);
+    });
+  });
+}
+
+prerequisites("Coding").fork(abort, println);
+
+function prerequisites(name) {
+  return new Task(function(reject, resolve){
+    collectPrerequisites(name).then(resolve, reject);
+  });
+}
+
 async function collectPrerequisites(startName) {
 
   const seen = new Set();
@@ -165,6 +185,7 @@ async function collectPrerequisites(startName) {
 
   async function dfs(startName) {
     const names = await getNames(startName);
+
     const {name} = names;
 
     if (seen.has(name)) return;          // dedupe + short-circuit
@@ -172,8 +193,7 @@ async function collectPrerequisites(startName) {
     seen.add(name);
     result.push(name);                   // keep "first name comes up top" order
 
-    const results = await promise(qry(`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`));
-    const prereqs = results?.[0]?.[0]?.properties?.prerequisites || [];
+    const prereqs = await promise(qryPrerequisites(name));
     for (const prereqName of prereqs) {
       await dfs(prereqName);             // nesting until leaf nodes
     }
@@ -205,13 +225,19 @@ function forkable(g){
     const f = g(options);
     if (isPiped){
       await piped(async function(arg){
-        await promise(f(arg, ...payload).map(fmt(options))).catch(balk).then(println);
+        await promise(f(arg, ...payload).map(fmt(options))).catch(abort).then(println);
       });
     } else {
-      await promise(f(...payload).map(fmt(options))).catch(balk).then(println);
+      await promise(f(...payload).map(fmt(options))).catch(abort).then(println);
     }
-    Deno.exit(0);
+    //Deno.exit(0);
   }
+}
+
+function abort(error){
+  console.log("ABORT");
+  error && console.error('Error:', error.message);
+  Deno.exit(1);
 }
 
 async function piped(f){
@@ -414,8 +440,7 @@ function page(options){
         throw new Error(`Unknown format: ${format}`);
       }
     } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+      abort(error);
     }
   }
 }
@@ -454,8 +479,7 @@ function search(options){
         throw new Error(`Unknown format: ${format}`);
       }
     } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+      abort(error);
     }
   }
 }
@@ -473,7 +497,7 @@ function prereq(){
       if (!name) {
         console.error('Error: Name argument is required');
         console.error('Usage: notes prereq <name>');
-        Deno.exit(1);
+        abort("prereq");
       }
 
       const results = await collectPrerequisites(name);
@@ -481,8 +505,7 @@ function prereq(){
       // Return results instead of directly outputting them
       return results;
     } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+      abort(error);
     }
   }
 }
@@ -518,8 +541,7 @@ function named(options){
         throw new Error(`Unknown format: ${format}`);
       }
     } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+      abort(error);
     }
   }
 }
@@ -574,9 +596,6 @@ function has(options, prop = null){
   return prop ? fn.bind(null, prop) : fn;
 }
 
-const take = (xs, n = Infinity) =>
-  Array.isArray(xs) ? xs.slice(0, n) : [];
-
 function backlinks(options){
   const format = options.json ? 'json' : (options.format || 'md');
   const limit = options.limit ? parseInt(options.limit) : Infinity;
@@ -618,8 +637,7 @@ function backlinks(options){
         pageNames.forEach(name => console.log(name));
       }
     } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+      abort(error);
     }
   }
 }
@@ -644,8 +662,7 @@ function query(options){
           forEach(item => console.log(item));
       }
     } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+      abort(error);
     }
   }
 }
@@ -688,7 +705,6 @@ function normal(name){
 
 function fmtProps({format}, propName = null){
   return function([name, results]){
-    //console.log({results, propName});
     const pageData = results[0]?.[0] || null;
 
     if (format === 'json') {
@@ -707,7 +723,6 @@ function fmtProps({format}, propName = null){
 
 function fmtBody({heading, format}){
   return function([name, content]){
-    //console.log({name, content})
     if (format === 'json') {
       return [name, JSON.stringify(content, null, 2)];
     } else if (format === 'md') {
@@ -724,11 +739,6 @@ function fmtBody({heading, format}){
       return lines;
     }
   }
-}
-
-function balk(error){
-  console.error('Error:', error.message);
-  Deno.exit(1);
 }
 
 function println(lines){
@@ -749,7 +759,7 @@ function demand(...whats){
   return /*isPiped ?*/ whats.map(what => `[${what}]`).join(' ') /*: whats.map(what => `<${what}>`).join(' ')*/;
 }
 
-//qryProps("tags", ["Employing Agents"]).fork(balk, println);
+//qryProps("tags", ["Employing Agents"]).fork(abort, println);
 
 const program = new Command()
   .name('notes')
@@ -777,8 +787,7 @@ program
         throw new Error(`Unknown format: ${format}`)
       }
     } catch (error) {
-      console.error('Error:', error.message)
-      Deno.exit(1)
+      abort(error);
     }
   });
 
@@ -888,7 +897,7 @@ program
 if (import.meta.main) {
   if (Deno.args.length === 0) {
     program.showHelp();
-    Deno.exit(0);
+    abort("MAIN");
   }
   await program.parse();
 }
