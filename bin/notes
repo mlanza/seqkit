@@ -230,7 +230,7 @@ function fmt(options){
   }
 }
 
-function forkable(g){
+function pipeable(g){
   return async function (options, ...payload){
     const f = g(options);
     if (isPiped){
@@ -274,7 +274,7 @@ async function piped(f){
   }
 }
 
-function pipeable(g){
+function oldPipeable(g){
   return async function (options, ...payload){
     const f = g(options);
     if (isPiped){
@@ -757,7 +757,7 @@ program
   .option('--nest', 'Use hierarchical nesting with format output')
   .option('-l, --less <patterns:string>', 'Less content matching regex patterns', { collect: true })
   .option('-o, --only <patterns:string>', 'Only content matching regex patterns', { collect: true })
-  .action(pipeable(page));
+  .action(oldPipeable(page));
 
 program
   .command('tags')
@@ -768,7 +768,7 @@ program
   .option('--any', 'Require ANY tag to be present')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(forkable(tags));
+  .action(pipeable(tags));
 
 program
   .command('has')
@@ -779,19 +779,19 @@ program
   .option('--any', 'Require ANY tag to be present')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(forkable(has));
+  .action(pipeable(has));
 
 program
   .command('prereq')
   .description('Recursively list page prerequisites')
   .arguments(demand("name"))
-  .action(forkable(constantly(prerequisites)));
+  .action(pipeable(constantly(prerequisites)));
 
 program
   .command('path')
   .description('The path to the page file')
   .arguments(demand("name"))
-  .action(forkable(path));
+  .action(pipeable(path));
 
 program
   .command('props')
@@ -801,7 +801,7 @@ program
   .option('--desc', "With description")
   .option('--json', 'Output JSON format')
   .option('--no-heading', 'Omit H1 heading and trailing blank line for MD format')
-  .action(forkable(comp(props, normalizeOptions)));
+  .action(pipeable(comp(props, normalizeOptions)));
 
 program
   .command('search')
@@ -810,7 +810,7 @@ program
   .arguments(demand("term"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(forkable(constantly(search)));
+  .action(pipeable(constantly(search)));
 
 program
   .command('name')
@@ -819,14 +819,14 @@ program
   .arguments(demand("id|name"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(forkable(constantly(tskNamed)));
+  .action(pipeable(constantly(tskNamed)));
 
 program
   .command('alias')
   .alias('a')
   .description('Get page name from alias')
   .arguments(demand("alias"))
-  .action(forkable(alias));
+  .action(pipeable(alias));
 
 program
   .command('backlinks')
@@ -836,7 +836,7 @@ program
   .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', 'none')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(forkable(backlinks));
+  .action(pipeable(backlinks));
 
 program
   .command('query')
@@ -846,7 +846,7 @@ program
   .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', 'none')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(forkable(query));
+  .action(pipeable(query));
 
 if (import.meta.main) {
   if (Deno.args.length === 0) {
