@@ -199,35 +199,34 @@ function qryPrerequisites(name){
   });
 }
 
-function prerequisites(name) {
-  return new Task(function(reject, resolve){
-    collectPrerequisites(name).then(resolve, reject);
-  });
-}
+function prerequisites(name){
+  return new Task(async function(reject, resolve){
+    const seen = new Set();
+    const result = [];
 
-async function collectPrerequisites(startName) {
+    async function dfs(startName) {
+      const names = await getNames(startName);
 
-  const seen = new Set();
-  const result = [];
+      const {name} = names;
 
-  async function dfs(startName) {
-    const names = await getNames(startName);
+      if (seen.has(name)) return;          // dedupe + short-circuit
 
-    const {name} = names;
+      seen.add(name);
+      result.push(name);                   // keep "first name comes up top" order
 
-    if (seen.has(name)) return;          // dedupe + short-circuit
-
-    seen.add(name);
-    result.push(name);                   // keep "first name comes up top" order
-
-    const prereqs = await promise(qryPrerequisites(name));
-    for (const prereqName of prereqs) {
-      await dfs(prereqName);             // nesting until leaf nodes
+      const prereqs = await promise(qryPrerequisites(name));
+      for (const prereqName of prereqs) {
+        await dfs(prereqName);             // nesting until leaf nodes
+      }
     }
-  }
 
-  await dfs(startName);
-  return result;
+    try {
+      await dfs(name);
+    } catch (ex) {
+      reject(ex);
+    }
+    resolve(result);
+  });
 }
 
 function pipeable(g){
