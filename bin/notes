@@ -345,8 +345,7 @@ function nestedJsonToMarkdown(blocks, level = 0) {
       const [line, ...parts] = content.split("\n");
       if (line.includes("::")) {
         lines.push(`${indent}${line}`);
-        const pts = parts.join("\n").trim().split("\n");
-        for(const line of pts){
+        for(const line of parts.join("\n").trim().split("\n")){
           lines.push(`${indent}${line}`);
         }
       } else {
