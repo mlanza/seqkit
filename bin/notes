@@ -372,8 +372,8 @@ function nestedJsonToMarkdown(blocks, level = 0) {
 }
 
 const shorthand = {
-  "@task": "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)",
-  "@link": '^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+"[^"\\r\\n]*")?\\s*\\))\\s*$'
+  "@tasks": "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)",
+  "@links": '^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+"[^"\\r\\n]*")?\\s*\\))\\s*$'
 }
 
 function keeping(patterns, hit = true){
