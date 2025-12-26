@@ -629,9 +629,9 @@ function normalizeOptions(options){
 
 function qry(query, limit = Infinity){
   return new Task(function(reject, resolve){
-    callLogseq('logseq.DB.datascriptQuery', [query]).then(function(results){
-      return take(results , limit);
-    }).then(resolve).catch(reject);
+    tskLogseq('logseq.DB.datascriptQuery', [query]).fork(reject, function(results){
+      resolve(take(results, limit));
+    });
   });
 }
 
