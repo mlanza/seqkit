@@ -4,7 +4,7 @@ import { TextLineStream } from "https://deno.land/std/streams/text_line_stream.t
 
 import Task from "https://esm.sh/data.task";
 
-async function detectPiped() {
+function detectPiped() {
   return !Deno.isatty(Deno.stdin.rid);
 }
 
@@ -251,7 +251,7 @@ function prerequisites(name){
 
 function pipeable(g){
   return async function (options, ...args){
-    const wasPiped = await detectPiped();
+    const wasPiped = detectPiped();
     const f = g(options);
     if (wasPiped){
       await incoming(async function(arg){
@@ -283,7 +283,7 @@ async function incoming(f){
 function oldPipeable(g){
   return async function (options, ...args){
     const f = g(options);
-    const wasPiped = args.length === 0 && await detectPiped();
+    const wasPiped = args.length === 0 && detectPiped();
     if (wasPiped){
       await incoming(function(arg){
         return f(arg, ...args);
