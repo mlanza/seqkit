@@ -838,7 +838,7 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
   .action(pipeable(query));
-console.log({main: import.meta.main})
+
 if (import.meta.main) {
   if (Deno.args.length === 0) {
     program.showHelp();
