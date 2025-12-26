@@ -569,49 +569,49 @@ function has(options, prop = null){
   return prop ? qry.bind(null, prop) : qry;
 }
 
-function backlinks(options){
-  const format = options.json ? 'json' : (options.format || 'md');
-  const limit = options.limit ? parseInt(options.limit) : Infinity;
-  return async function(pageName){
+function qryBacklinks(name, limit = Infinity){
+  return new Task(async function(reject, resolve){
     try {
-      if (!pageName) {
-        throw new Error('Page name is required');
+      if (!name) {
+        reject(new Error('Page name is required'));
       }
 
-      const items = await promise(qry(`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${pageName.toLowerCase()}"]]`, limit));
+      const items = await promise(qry(`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${name.toLowerCase()}"]]`, limit));
 
-      if (format === 'json') {
-        console.log(JSON.stringify(items, null, 2));
-      } else {
-        // Extract unique page IDs from backlink results
-        const pageIds = new Set()
-        items?.forEach(item => {
-          const block = item?.[0];
-          if (block?.page?.id) {
-            pageIds.add(block.page.id);
-          }
-        });
-
-        // Get page details for each unique page ID
-        const pageNames = new Set()
-        for (const pageId of pageIds) {
-          try {
-            const pageResult = await callLogseq('logseq.Editor.getPage', [pageId])
-            if (pageResult && pageResult.originalName) {
-              pageNames.add(pageResult.originalName);
-            }
-          } catch (pageError) {
-            // Continue with other pages if one fails
-            console.error(`Warning: Could not get page ${pageId}: ${pageError.message}`);
-          }
+      const pageIds = new Set()
+      items?.forEach(item => {
+        const block = item?.[0];
+        if (block?.page?.id) {
+          pageIds.add(block.page.id);
         }
+      });
 
-        // Output deduplicated page names (one per line)
-        pageNames.forEach(name => console.log(name));
+      // Get page details for each unique page ID
+      const pageNames = new Set()
+      for (const pageId of pageIds) {
+        try {
+          const pageResult = await callLogseq('logseq.Editor.getPage', [pageId])
+          if (pageResult && pageResult.originalName) {
+            pageNames.add(pageResult.originalName);
+          }
+        } catch (pageError) {
+          // Continue with other pages if one fails
+          reject(new Error(`Warning: Could not get page ${pageId}: ${pageError.message}`));
+        }
       }
+
+      resolve(Array.from(pageNames));
+
     } catch (error) {
-      abort(error);
+      reject(error);
     }
+  });
+}
+
+function backlinks(options){
+  const limit = options.limit ? parseInt(options.limit) : Infinity;
+  return function(name){
+    return qryBacklinks(name, limit);
   }
 }
 
@@ -837,7 +837,7 @@ program
   .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', 'none')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(pipeable(backlinks));
+  .action(forkable(backlinks));
 
 program
   .command('query')
