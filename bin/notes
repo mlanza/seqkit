@@ -97,10 +97,11 @@ function toInt(s) {
   return typeof s === 'string' && /^-?\d+$/.test(s) ? Number(s) : null
 }
 
-async function getNormalizedName(name){
-  const page = await callLogseq('logseq.Editor.getPage', [toInt(name) || name]);
-  return page?.originalName;
+function tskNormalizedName(name){
+  return tskLogseq('logseq.Editor.getPage', [toInt(name) || name]).map(page => page?.originalName);
 }
+
+const getNormalizedName = comp(promise, tskNormalizedName);
 
 async function isJournal(name){
   const page = await callLogseq('logseq.Editor.getPage', [name]);
