@@ -63,7 +63,7 @@ $ notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
 
 ## Environment
 
-Have `pwsh` and `deno` installed.  These runtimes were targeted over `zsh` and `bash` for cross-platform compatibility to accommodate those who work on Mac, Linux or Windows.
+Have `pwsh` and `deno` installed.  These runtimes were targeted over `zsh` and `bash` to accommodate everyone, whether on Mac, Linux or Windows.
 
 Install tools in your path however you like:
 ```zsh
