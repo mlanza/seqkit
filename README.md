@@ -35,7 +35,7 @@ Sample commands:
 * `period $(seq -90 -60) | notes page` - a range of journal entries (`zsh`)
 * `period -30..0 | notes page` - a range of journal entries (`pwsh`)
 
-These can be issued directly in [OpenCode](https://opencode.ai) — by you or the agent.  Being command line, these can be used by any agentic runtime with Computer Use.
+These can be issued directly in [OpenCode](https://opencode.ai) — by you or the agent.  Being command line, these can be used by any agentic runtime (Claude, Gemini, etc.) with Computer Use.
 
 All `notes` commands receive the primary operand directly or via stdin.  This enables you to execute one or many commands.
 
