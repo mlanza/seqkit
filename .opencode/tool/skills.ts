@@ -3,7 +3,7 @@ import { tool } from "@opencode-ai/plugin";
 import { spawn } from "node:child_process";
 
 export default tool({
-  description: "List skills — the primary means to having an agent level up its abilities",
+  description: "List skills — the front door to having an agent level up its abilities",
   args: {},
   async execute(args) {
     return new Promise((resolve) => {
