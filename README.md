@@ -1,6 +1,6 @@
 # Seqkit
 
-A toolkit for [Logseq](https://logseq.com) that exposes knowhow to agents.  Prefer command line tools to MCP tools because they're ephemeral, composeable and available to humans and agents alike. It's easier to wrap a command line tool as an MCP server, than the reverse.
+A toolkit for exposing [Logseq](https://logseq.com) knowhow to agents.  Prefer command line tools to MCP tools because they're ephemeral, composeable and available to humans and agents alike. It's easier to wrap a command line tool as an MCP server, than the reverse.
 
 Your local-first commonplace book is a near perfect spot for keeping all the information and instructions an agent needs to thrive.  It is an excellent store for skills.  Tag a page `Skills` and describe it with a `description` property.  Include any `prerequisites` that make sense and you're ready to go.  Prerequisite topics are automatically included when calling `about`.
 
