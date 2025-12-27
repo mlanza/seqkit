@@ -11,8 +11,9 @@ Sample commands:
 * `notes page Atomic | wikilinks | notes page` - list all wikilinked pages
 * `notes page Atomic | links` - to view links on page
 * `notes page Atomic` - list a particular page by name
-* `notes t Programming` - list notes tagged something
-* `notes t Programming | notes page | bat` - pipe names into page to list content for a bunch of pages
+* `notes t Programming` - list notes tagged Programming
+* `notes name programming | notes t` - normalize the name and find pages tagged Programming
+* `notes t Programming | notes page` - pipe names into page to list content for a bunch of pages
 * `echo "Atomic\nCosmos" | notes tags`
 * `skills` - for a skills menu
 * `about Coding` - to lookup the Coding skill
