@@ -6,7 +6,11 @@ Your local-first commonplace book 📖 is a near perfect spot for keeping all th
 
 That also makes it the ideal store for skills.  Tag a page `Skills` and describe it with a `description` property.  Include any `prerequisites` that make sense and you're ready to go.  Prerequisite topics are automatically — and recursively — included when calling `about`.
 
-Sample frontmatter in the `Coding` page:
+Sample frontmatter in the `Coding` page displayed via:
+
+```zsh
+$ notes props Coding --no-heading
+```
 
 ```md
 tags:: AI, [[Making apps]], Skills
