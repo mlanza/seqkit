@@ -99,7 +99,7 @@ There is a custom `skills` and an `about` tool which together facilitate knowled
 
 ## Under The Hood
 
-The `about` tool filters out blocks which are themselves either links or TODOs.  This is because of how I keep notes.  I combine my [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done) content in one spot.  This includes lots of loose links — things I want to further examine or just read — only some of which become TODOs. That's all noise to an agent, which is why it gets filtered out.  Links which are embedded in statements as hyperlinks are kept.
+The `about` tool filters out blocks which are themselves either links or TODOs.  This is because of how I keep notes.  I combine [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done) content in one spot.  This includes lots of loose links — things I want to further examine or just read — only some of which become TODOs. That's all noise to an agent which is why it gets filtered out.  Links which are embedded in statements as hyperlinks are kept.
 
 ## License
 [MIT](./LICENSE.md)
