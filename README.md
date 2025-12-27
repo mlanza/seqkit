@@ -56,9 +56,9 @@ Set these environment variables:
 * **NOTES_ENDPOINT** - the HTTP API endpoint, e.g. http://127.0.0.1:12315/api
 * **NOTES_TOKEN** - a token you configured for the HTTP API
 
-## OpenCode Custom `about` Tool
+## OpenCode Custom Tools
 
-There is a custom about tool here.  This and `skills` facilitate knowledge lookup.  The tool is available to OpenCode when you start it in this repo.  You can symlink it from your global opencode config to make it universally available.
+There is a custom `skills` and an `about` tool which together facilitate knowledge lookup.  The tool is available to OpenCode when you start it in the repo.  Symlink them from your global opencode config to make them universally available.
 
 ## License
 [MIT](./LICENSE.md)
