@@ -47,7 +47,7 @@ Sample tools:
 
 These can be issued directly in [OpenCode](https://opencode.ai) — by you or the agent.  Being command line, these can be used by any agentic runtime (Claude, Gemini, etc.) with Computer Use.
 
-All `notes` commands receive the primary operand directly or via stdin.  This enables you to execute one or many commands.
+All `notes` commands receive the primary operand directly or via stdin.  This is useful for composing compound commands.
 
 You must run Logseq in Developer Mode.  Flip it on under `Settings > Advanced`.  Then enable the local HTTP API via the button in the upper right. You must [set up a token](https://wiki.jamesravey.me/books/software-misc/page/logseq-http-api).  This setup and tooling transforms Logseq into a lightweight MCP server.
 
