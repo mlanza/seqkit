@@ -15,6 +15,8 @@ Sample commands:
 * `notes name programming | notes t` - normalize the name and find pages tagged Programming
 * `notes tags Programming | notes page` - pipe names into page to list content for a bunch of pages
 * `echo "Atomic\nCosmos" | notes tags`
+* `pages Atomic Cosmos | notes page`
+* `pages Coding Tasking Decomposing | notes prereq | seen | notes page`
 * `skills` - for a skills menu
 * `about Coding` - to lookup the Coding skill
 * `ago 90 | notes page` - to review 90 days of journal entries
