@@ -49,6 +49,8 @@ Sample tools:
 * `list Coding Tasking Decomposing | notes prereq | seen | notes page`
 * `ago 90 | notes page` - to review 90 days of journal entries
 * `ago 90 | notes page | links` - recent links from journal entries
+* `ago 90 | notes page --only "~tasks"` - to display only TODOs
+* `ago 90 | notes page --less "~tasks"` - to display everything but TODOs
 * `period $(seq -90 -60) | notes page` - a range of journal entries (`zsh`)
 * `period -30..0 | notes page` - a range of journal entries (`pwsh`)
 
