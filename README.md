@@ -11,14 +11,16 @@ Sample commands:
 * `notes page Atomic | wikilinks | notes page` - list all wikilinked pages
 * `notes page Atomic | links` - to view links on page
 * `notes page Atomic` - list a particular page by name
-* `notes t Programming` - list notes tagged Programming
+* `notes tags Programming` - list notes tagged Programming
 * `notes name programming | notes t` - normalize the name and find pages tagged Programming
-* `notes t Programming | notes page` - pipe names into page to list content for a bunch of pages
+* `notes tags Programming | notes page` - pipe names into page to list content for a bunch of pages
 * `echo "Atomic\nCosmos" | notes tags`
 * `skills` - for a skills menu
 * `about Coding` - to lookup the Coding skill
 * `ago 90 | notes page` - to review 90 days of journal entries
 * `ago 90 | notes page | links` - recent links from journal entries
+* `period $(seq -90 -60) | notes page` - a range of journal entries (`zsh`)
+* `period -30..0 | notes page` - a range of journal entries (`pwsh`)
 
 Most commands accept the primary operand directly or via stdin.
 
@@ -26,7 +28,7 @@ You must have Logseq running in Developer Mode.  This can be flipped on under Se
 
 ## Environment
 
-Ensure `pwsh` is installed.
+Ensure `pwsh` is installed.  It was targeted over `zsh` and `bash` for cross-platform compatibility since I work on both a Mac and Windows.
 
 Install the scripts in your path however you like:
 ```zsh
