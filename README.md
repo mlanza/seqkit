@@ -47,7 +47,7 @@ Sample tools:
 * `period $(seq -90 -60) | notes page` - a range of journal entries (`zsh`)
 * `period -30..0 | notes page` - a range of journal entries (`pwsh`)
 
-These can be issued directly in [OpenCode](https://opencode.ai) — by you or the agent.  Being command line, these can be used by any agentic runtime (Claude, Gemini, etc.) with Computer Use.
+These can be issued directly in [OpenCode](https://opencode.ai) — by you or the agent.  Being command line, these can be used by any agentic runtime (Claude, Gemini, etc.) with [computer use](https://www.anthropic.com/news/3-5-models-and-computer-use).
 
 All `notes` commands receive the primary operand directly or via stdin.  This is useful for composing compound commands.
 
@@ -78,7 +78,7 @@ Set these environment variables:
 
 ## OpenCode Custom Tools
 
-There is a custom `skills` and an `about` tool which together facilitate knowledge lookup minus Computer Use.  They're available to OpenCode when you start it in the repo.  Symlink them into your global opencode config path to make them universally available.
+There is a custom `skills` and an `about` tool which together facilitate knowledge lookup minus computer use.  They're available to OpenCode when you start it in the repo.  Symlink them into your global opencode config path to make them universally available.
 
 ## License
 [MIT](./LICENSE.md)
