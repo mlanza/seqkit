@@ -35,9 +35,9 @@ Sample commands:
 * `period $(seq -90 -60) | notes page` - a range of journal entries (`zsh`)
 * `period -30..0 | notes page` - a range of journal entries (`pwsh`)
 
-Most commands accept the primary operand directly or via stdin.
+All `notes` commands receive the primary operand directly or via stdin.  This enables you to execute one or many commands.
 
-You must have Logseq running in Developer Mode.  This can be flipped on under Settings > Advanced.  After that, enable the local HTTP API. It appears as a button in the upper right.  This effectively treats your local-first install of Logseq as an MCP server.
+You must run Logseq in Developer Mode.  Flip it on under `Settings > Advanced`.  Then enable the local HTTP API via the button in the upper right.  This treats your local-first install of Logseq as an MCP server.
 
 ## Environment
 
