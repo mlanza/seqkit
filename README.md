@@ -49,6 +49,8 @@ Sample tools calls:
 * `echo "Atomic\nCosmos" | notes tags`
 * `list Atomic Cosmos | notes page`
 * `list Coding Tasking Decomposing | notes prereq | seen | notes page`
+* `day | notes page` - today's journal page
+* `day -1 | notes page` - yesterday's journal page
 * `ago 90 | notes page` - to review 90 days of journal entries
 * `ago 90 | notes page | links` - recent links from journal entries
 * `ago 90 | notes page --only "~tasks"` - to display only TODOs

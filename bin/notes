@@ -857,9 +857,6 @@ program
   .option('--json', 'Output JSON format')
   .action(pipeable(query));
 
-program
-  .command('foo')
-
 if (import.meta.main) {
   if (Deno.args.length === 0) {
     program.showHelp();
