@@ -251,15 +251,12 @@ function prerequisites(name){
 
 function pipeable(g){
   return async function (options, ...args){
-    const wasPiped = detectPiped();
     const f = g(options);
-    if (wasPiped){
-      await incoming(async function(arg){
-        await promise(f(arg, ...args).map(fmt(options))).catch(abort).then(println);
-      });
-    } else {
+    await incoming(async function(arg){
+      await promise(f(arg, ...args).map(fmt(options))).catch(abort).then(println);
+    }, async function(){
       await promise(f(...args).map(fmt(options))).catch(abort).then(println);
-    }
+    });
   }
 }
 
@@ -267,30 +264,38 @@ const nonBlankLines = {
   transform: (line, c) => line.trim() && c.enqueue(line)
 }
 
-async function incoming(f){
-  const streamed = Deno.
-    stdin.
-    readable.
-    pipeThrough(new TextDecoderStream()).
-    pipeThrough(new TextLineStream()).
-    pipeThrough(new TransformStream(nonBlankLines));
+async function incoming(f, fallback) {
+  if (Deno.isatty(Deno.stdin.rid)) {   // If stdin is a TTY, no piping is happening
+    await fallback();
+    return;
+  }
 
-  for await (const line of streamed) {
-    f(line)
+  const streamed = Deno.stdin.readable
+    .pipeThrough(new TextDecoderStream())
+    .pipeThrough(new TextLineStream())
+    .pipeThrough(new TransformStream(nonBlankLines));
+
+  let received = false;
+  try {
+    for await (const line of streamed) {
+      await f(line);
+      received = true;
+    }
+  } finally {
+    if (!received) {
+      await fallback();
+    }
   }
 }
 
 function oldPipeable(g){
   return async function (options, ...args){
     const f = g(options);
-    const wasPiped = args.length === 0 && detectPiped();
-    if (wasPiped){
-      await incoming(function(arg){
-        return f(arg, ...args);
-      });
-    } else {
-      await f(...args);
-    }
+    await incoming(function(arg){
+      return f(arg, ...args);
+    }, function(){
+      return f(...args);
+    });
   }
 }
 
