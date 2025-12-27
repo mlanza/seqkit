@@ -739,7 +739,7 @@ function tskGetAllPages(type){
 const program = new Command()
   .name('notes')
   .description('Retrieve and/or append to pages and journals')
-  .version('0.8.0')
+  .version('0.7.0')
   .stopEarly();
 
 program
