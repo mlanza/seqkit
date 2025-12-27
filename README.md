@@ -41,6 +41,12 @@ All `notes` commands receive the primary operand directly or via stdin.  This en
 
 You must run Logseq in Developer Mode.  Flip it on under `Settings > Advanced`.  Then enable the local HTTP API via the button in the upper right. You must [set up a token](https://wiki.jamesravey.me/books/software-misc/page/logseq-http-api).  This setup and tooling transforms Logseq into a lightweight MCP server.
 
+## Datalog
+
+The killer feature in Logseq is its [DataScript](https://www.npmjs.com/package/datascript) spine.  It conveniently exposes Datalog queries.  There's no limit to the queries you can build.  Most of the innards build on it.  It's one reason I prefer Logseq to Obsidian.
+
+* `notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'`
+
 ## Environment
 
 Have `pwsh` and `deno` installed.  These runtimes were targeted over `zsh` and `bash` for cross-platform compatibility to accommodate those who work on Mac, Linux or Windows.
