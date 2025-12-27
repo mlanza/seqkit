@@ -55,7 +55,7 @@ You must run Logseq in Developer Mode.  Flip it on under `Settings > Advanced`. 
 
 ## Querying via Datalog
 
-Logseq's superpower is its [DataScript](https://www.npmjs.com/package/datascript) spine.  With Datalog queries in easy reach, there's no limit to the queries and custom commands you can build.  The innards build on this.  It's one reason to prefer Logseq to Obsidian.
+Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) spine.  With Datalog queries in easy reach, there's no limit to the queries and custom commands you can build.  The innards build on this.  It's one reason to prefer Logseq to Obsidian.
 
 ```zsh
 $ notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
