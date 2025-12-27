@@ -38,8 +38,8 @@ Sample tools:
 * `notes name programming | notes t` - normalize the name and find pages tagged Programming
 * `notes tags Programming | notes page` - pipe names into page to list content for a bunch of pages
 * `echo "Atomic\nCosmos" | notes tags`
-* `pages Atomic Cosmos | notes page`
-* `pages Coding Tasking Decomposing | notes prereq | seen | notes page`
+* `list Atomic Cosmos | notes page`
+* `list Coding Tasking Decomposing | notes prereq | seen | notes page`
 * `ago 90 | notes page` - to review 90 days of journal entries
 * `ago 90 | notes page | links` - recent links from journal entries
 * `period $(seq -90 -60) | notes page` - a range of journal entries (`zsh`)
