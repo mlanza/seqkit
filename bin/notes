@@ -1,31 +1,135 @@
 #!/usr/bin/env deno run --allow-net --allow-env --allow-read
 import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
+import { TextLineStream } from "https://deno.land/std/streams/text_line_stream.ts";
+
+import Task from "https://esm.sh/data.task";
 
 const NOTES_ENDPOINT = Deno.env.get('NOTES_ENDPOINT') || '';
 const NOTES_TOKEN = Deno.env.get('NOTES_TOKEN') || '';
 const NOTES_DIR = Deno.env.get('NOTES_DIR') || '';
 
-const jnl = /^\d{4}-\d{2}-\d{2}\s(?:Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)$/;
+const comp = (...fns) => (...args) =>
+  fns.reduceRight((acc, fn, i) =>
+    i === fns.length - 1 ? fn(...acc) : fn(acc),
+  args)
 
-const isPiped = !Deno.isatty(Deno.stdin.rid);
-
-async function getNormalizedName(name){
-  const page = await callLogseq('logseq.Editor.getPage', [name]);
-  return page?.originalName;
+function println(lines){
+  Array.isArray(lines) ? lines.forEach(line => console.log(line)) : console.log(lines);
 }
 
-async function isJournal(name){
-  const page = await callLogseq('logseq.Editor.getPage', [name]);
-  if (!page) return false;
-  const { ['journal?']: journal } = page;
-  return journal;
+function abort(error){
+  error && console.error('Aborted:', error?.message || error);
+  Deno.exit(1);
 }
+
+const take = (xs, n = Infinity) =>
+  Array.isArray(xs) ? xs.slice(0, n) : [];
+
+function all (tasks) {
+  if (!Array.isArray(tasks) || tasks.length === 0) {
+    return Task.of([]);
+  }
+
+  return new Task((reject, resolve) => {
+    const results = new Array(tasks.length);
+    let completed = 0;
+    let hasRejected = false;
+    const cleanups = [];
+
+    // Handle individual task completion
+    const handleComplete = (index, result) => {
+      if (hasRejected) return;
+
+      results[index] = result;
+      completed++;
+
+      if (completed === tasks.length) {
+        resolve(results);
+      }
+    };
+
+    // Handle individual task rejection
+    const handleReject = (error) => {
+      if (hasRejected) return;
+
+      hasRejected = true;
+      reject(error);
+
+      // Clean up all remaining tasks
+      cleanups.forEach(cleanup => cleanup && cleanup());
+    };
+
+    // Fork all tasks
+    tasks.forEach((task, index) => {
+      const cleanup = task.fork(
+        (error) => handleReject(error),
+        (result) => handleComplete(index, result)
+      );
+      cleanups.push(cleanup);
+    });
+
+    // Return cleanup function
+    return () => {
+      hasRejected = true;
+      cleanups.forEach(cleanup => cleanup && cleanup());
+    };
+  });
+};
+
+function juxt(...fns){
+  return function(x){
+    return Task.all(fns.reduce(function(memo, f){
+      memo.push(f(x));
+      return memo;
+    }, []));
+  }
+}
+
+Task.all = all;
+Task.juxt = juxt;
+
+function promise(tsk){
+  return new Promise(function(resolve, reject){
+    tsk.fork(reject, resolve);
+  });
+}
+
+function fmt(options){
+  const format = options.json ? 'json' : (options.format || 'md');
+  return function(results){
+    if (format === "json") {
+      return JSON.stringify(results, null, 2);
+    } else {
+      return results;
+    }
+  }
+}
+
+function toInt(s) {
+  return typeof s === 'string' && /^-?\d+$/.test(s) ? Number(s) : null
+}
+
+function tskNormalizedName(name){
+  return tskLogseq('logseq.Editor.getPage', [toInt(name) || name]).map(page => page?.originalName);
+}
+
+const getNormalizedName = comp(promise, tskNormalizedName);
+
+function tskIsJournal(name){
+  return tskLogseq('logseq.Editor.getPage', [name]).map(function(page){
+    if (!page) return false;
+    const { ['journal?']: journal } = page;
+    return journal;
+  });
+}
+
+const isJournal = comp(promise, tskIsJournal);
 
 async function exists(path){
   try {
     await Deno.stat(path);
     return path
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -42,12 +146,17 @@ async function getFilePath(journal, name){
 
 const je = /^(?:\d{8}|\d{4}-\d{2}-\d{2})$/;
 
-async function getJournalPage(datestamp){
-  const arg = datestamp.split(' ')?.[0].replaceAll("-", "");
-  const result = await qry(`[:find (pull ?p [*]) :where [?p :block/journal-day ${arg}]]`);
-  const obj = result?.[0]?.[0] || {};
-  return obj["journal?"] ? obj["original-name"] : null;
+function tskGetJournalPage(datestamp){
+  return new Task(function(reject, resolve){
+    const arg = datestamp.split(' ')?.[0].replaceAll("-", "");
+    qry(`[:find (pull ?p [*]) :where [?p :block/journal-day ${arg}]]`).fork(reject, function(result){
+      const obj = result?.[0]?.[0] || {};
+      resolve(obj["journal?"] ? obj["original-name"] : null);
+    });
+  });
 }
+
+const getJournalPage = comp(promise, tskGetJournalPage);
 
 async function getNames(given){
   if (!given) return null;
@@ -57,280 +166,157 @@ async function getNames(given){
   const name = alias || normalized || given; // fallback to given if normalized is null
   const journal = name ? await isJournal(name) : null;
   const path = name ? await getFilePath(journal, name) : null;
-  const names = {journal, normalized, name, path};
+  const names = {given, journal, normalized, name, path};
   //console.log({names});
   return names;
 }
 
-// Convert journal date to YYYY-MM-DD format
-function journalDateToYYYYMMDD(journalName) {
-  // Handle Logseq journal format like "Dec 14th, 2025"
-  const match = journalName.match(/^([A-Za-z]+)\s+(\d+)(?:st|nd|rd|th),\s+(\d+)$/)
-  if (match) {
-    const [, month, day, year] = match
-    const monthNum = new Date(`${month} 1, 2000`).getMonth() + 1
-    return `${year}-${monthNum.toString().padStart(2, '0')}-${day.padStart(2, '0')}`
-  }
-
-  // Handle YYYY-MM-DD format directly
-  if (/^\d{4}-\d{2}-\d{2}$/.test(journalName)) {
-    return journalName
-  }
-
-  return journalName
-}
-
-async function callLogseq(method, args) {
-  const payload = { method }
-  if (args) {
-    payload.args = args
-  }
-
-  const response = await fetch(NOTES_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${NOTES_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-  }
-
-  const result = await response.json()
-
-  if (result && result.error) {
-    throw new Error(result.error)
-  }
-
-  return result
-}
-
-// Extract prerequisites from page content
-function extractPrerequisites(content) {
-  const lines = content.split('\n');
-  const prereqLine = lines.find(line => line.startsWith('prerequisites::'));
-
-  if (!prereqLine) {
-    return [];
-  }
-
-  // Extract the part after "prerequisites::"
-  const prereqPart = prereqLine.replace(/^prerequisites::\s*/, '');
-
-  // Remove [[ and ]] from each wikilink and handle comma separation
-  // First replace commas with newlines, then remove brackets, then trim whitespace
-  return prereqPart
-    .split(',')
-    .map(item => item
-      .replace(/\[\[/g, '')
-      .replace(/\]\]/g, '')
-      .trim()
-    )
-    .filter(item => item.length > 0);
-}
-
-// Collect prerequisites recursively using lq's callLogseq function
-async function collectPrerequisites(topic, debug = false, seenPages = new Set([])) {
-  const names = await getNames(topic);
-  if (!names) {
-    return [];
-  }
-  const {name} = names;
-  const currentTopic = name;
-
-  if (debug) {
-    console.error(`Collecting prerequisites for: ${currentTopic} (seen: ${seenPages})`);
-  }
-
-  // Check if this page has already been seen
-  if (seenPages.has(currentTopic)) {
-    if (debug) {
-      console.error(`Already seen: ${currentTopic}`);
-    }
-    return [];
-  }
-
-  // Add current page to seen pages
-  seenPages.add(currentTopic);
-
-  try {
-    // Get page content using lq's callLogseq function
-    const result = await callLogseq('logseq.Editor.getPageBlocksTree', [currentTopic]);
-
-    if (!result || !Array.isArray(result)) {
-      if (debug) {
-        console.error(`Failed to load: ${currentTopic}`);
+function tskLogseq(method, args){
+  return new Task(async function(reject, resolve){
+    try {
+      const payload = { method }
+      if (args) {
+        payload.args = args
       }
-      // Still return the current topic even if page fails to load
-      return [currentTopic];
-    }
 
-    // Convert block tree to text content
-    const content = result.map(block => {
-      if (block.content) {
-        return block.content;
+      const response = await fetch(NOTES_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NOTES_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        reject(new Error(`HTTP ${response.status}: ${response.statusText}`));
       }
-      return '';
-    }).join('\n');
 
-    // Extract prerequisites from this page
-    const prereqs = extractPrerequisites(content);
-
-    if (debug && prereqs.length > 0) {
-      console.error(`Found prerequisites for ${currentTopic}: ${prereqs.join(', ')}`);
-    }
-
-    if (prereqs.length === 0) {
-      if (debug) {
-        console.error(`No prerequisites found for: ${currentTopic}`);
+      const result = await response.json()
+      if (result && result.error) {
+        reject(new Error(result.error));
       }
-      // Still return the current topic even if no prerequisites
-      return [currentTopic];
-    }
 
-    // Output current topic (match bash version's immediate output)
-    const results = [currentTopic];
+      resolve(result);
 
-    // Process each prerequisite recursively
-    for (const prereq of prereqs) {
-      const prereqResults = await collectPrerequisites(prereq, debug, seenPages);
-      results.push(...prereqResults);
+    } catch (ex) {
+      reject(ex);
     }
-
-    return results;
-  } catch (error) {
-    if (debug) {
-      console.error(`Error loading ${currentTopic}: ${error.message}`);
-    }
-    // Still return the current topic even if page fails to load
-    return [currentTopic];
-  }
+  });
 }
 
-// Remove duplicates while preserving order
-function removeDuplicates(lines) {
-  const seen = new Set();
-  const uniqueLines = [];
+const callLogseq = comp(promise, tskLogseq);
 
-  for (const line of lines) {
-    if (line && !seen.has(line)) {
-      uniqueLines.push(line);
-      seen.add(line);
-    }
-  }
-
-  return uniqueLines;
+function qryPrerequisites(name){
+  return new Task(function(reject, resolve){
+    qry(`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`).fork(reject, function(results){
+      resolve(results?.[0]?.[0]?.properties?.prerequisites || []);
+    });
+  });
 }
 
-async function piped(f){
-  const decoder = new TextDecoder()
-  let stdinContent = ''
-  const buffer = new Uint8Array(1024)
+function prerequisites(name){
+  return new Task(async function(reject, resolve){
+    const seen = new Set();
+    const result = [];
 
-  while (true) {
-    const n = await Deno.stdin.read(buffer)
-    if (n === null) {
-      break
+    async function dfs(startName) {
+      const names = await getNames(startName);
+
+      const {name} = names;
+
+      if (seen.has(name)) return;          // dedupe + short-circuit
+
+      seen.add(name);
+      result.push(name);                   // keep "first name comes up top" order
+
+      const prereqs = await promise(qryPrerequisites(name));
+      for (const prereqName of prereqs) {
+        await dfs(prereqName);             // nesting until leaf nodes
+      }
     }
-    stdinContent += decoder.decode(buffer.subarray(0, n))
-  }
 
-  if (stdinContent === '') {
-    throw new Error('No inputs')
-  }
-
-  const lines = stdinContent.split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0);
-
-  for (const line of lines) {
-    await f(line);
-  }
+    try {
+      await dfs(name);
+    } catch (ex) {
+      reject(ex);
+    }
+    resolve(result);
+  });
 }
 
 function pipeable(g){
-  return async function (options, ...payload){
+  return async function (options, ...args){
     const f = g(options);
-    if (isPiped){
-      await piped(function(arg){
-        return f(arg, ...payload);
-      });
-    } else {
-      await f(...payload);
+    await incoming(async function(arg){
+      await promise(f(arg, ...args).map(fmt(options))).catch(abort).then(println);
+    }, async function(){
+      await promise(f(...args).map(fmt(options))).catch(abort).then(println);
+    });
+  }
+}
+
+const nonBlankLines = {
+  transform: (line, c) => line.trim() && c.enqueue(line)
+}
+
+async function incoming(one, only) {
+  if (Deno.isatty(Deno.stdin.rid)) {   // If stdin is a TTY, no piping is happening
+    await only();
+    return;
+  }
+
+  const streamed = Deno.stdin.readable
+    .pipeThrough(new TextDecoderStream())
+    .pipeThrough(new TextLineStream())
+    .pipeThrough(new TransformStream(nonBlankLines));
+
+  let received = false;
+  try {
+    for await (const line of streamed) {
+      await one(line);
+      received = true;
+    }
+  } finally {
+    if (!received) {
+      await only();
     }
   }
 }
 
-// Helper function to clean block structure for outline format
-function cleanBlockForOutline(block) {
-  const cleanBlock = {
-    id: block.id,
-    content: block.content || '',
-    level: block.level || 0,
-    marker: block.marker || null,
-    priority: block.priority || null,
-    children: []
-  };
-
-  // Clean up content by removing markers that will be added back during conversion
-  if (cleanBlock.content && cleanBlock.marker) {
-    // Remove the marker from content since it will be added back during markdown conversion
-    cleanBlock.content = cleanBlock.content.replace(new RegExp(`^\\s*${cleanBlock.marker}\\s+`), '');
+function oldPipeable(g){
+  return async function (options, ...args){
+    const f = g(options);
+    await incoming(function(arg){
+      return f(arg, ...args);
+    }, function(){
+      return f(...args);
+    });
   }
-
-  // Content-agnostic priority extraction: extract priority markers like [#A], [#B], [#C]
-  // without modifying the original content
-  if (cleanBlock.content && !cleanBlock.priority) {
-    const priorityMatch = cleanBlock.content.match(/^\s*\[#([ABC])\]\s*/);
-    if (priorityMatch) {
-      cleanBlock.priority = priorityMatch[1];
-    }
-  }
-
-  // Recursively clean children
-  if (block.children && Array.isArray(block.children)) {
-    cleanBlock.children = block.children.map(child => cleanBlockForOutline(child));
-  }
-
-  return cleanBlock;
 }
 
 // Recursive filtering function for blocks
-function filterBlockByPatterns(block, patterns) {
-  // If no patterns provided, keep everything
-  if (!patterns || patterns.length === 0) {
-    return block;
-  }
-
-  // Check if the block's content matches ANY of the patterns
-  // Test content directly, not marker + content combination
-  const content = block.content || '';
-  const marker = block.marker || '';
+function selectBlock(block, keep) {
+  const {content, properties} = block;
+  const props = /^[^\s:]+:: .+/;
 
   // Test content with and without marker to catch both cases
-  const contentWithMarker = marker ? `${marker} ${content}` : content;
-  const matches = patterns.some(pattern =>
-    pattern.test(content) || pattern.test(contentWithMarker)
-  );
+  const kept = props.test(content) || keep(content);
 
-  // If this block matches any pattern, filter it out (return null)
-  if (matches) {
+  if (!kept) {
     return null;
   }
 
   let filteredChildren = [];
   if (block.children && Array.isArray(block.children)) {
     filteredChildren = block.children
-      .map(child => filterBlockByPatterns(child, patterns))
+      .map(child => selectBlock(child, keep))
       .filter(child => child !== null); // Remove null entries (filtered out children)
   }
 
   // If this block doesn't have meaningful content and all children were filtered out, filter this block too
-  const hasContent = block.content && block.content.trim().length > 0;
-  const hasProperties = block.properties && Object.keys(block.properties).length > 0;
+  const hasContent = content || null;
+  const hasProperties = properties && Object.keys(properties).length > 0;
   const hasMeaningfulContent = hasContent || hasProperties;
 
   if (!hasMeaningfulContent && filteredChildren.length === 0) {
@@ -344,220 +330,59 @@ function filterBlockByPatterns(block, patterns) {
   };
 }
 
+function normalizeSeparator(parts){
+  return (parts.join("\n").trim() + "\n").split("\n");
+}
+
 // Helper function to convert nested JSON back to markdown format
 function nestedJsonToMarkdown(blocks, level = 0) {
   const lines = [];
+  const indent = '  '.repeat(level);
+  const hanging = '  '.repeat(level + 1);
 
-  blocks.forEach(block => {
-    if (block.content) {
-      // Preserve Logseq properties at the top level
-      if (level === 0 && block.content.includes('::')) {
-        lines.push(block.content);
+  blocks.forEach(function(block) {
+    const {content, children} = block;
+    if (content) {
+      const [line, ...parts] = content.split("\n");
+      if (line.includes("::")) {
+        lines.push(`${indent}${line}`);
+        for(const line of normalizeSeparator(parts)){
+          lines.push(`${indent}${line}`);
+        }
       } else {
-        // Add proper indentation based on level
-        const indent = '  '.repeat(level);
-        const marker = block.marker || '-';
-        lines.push(`${indent}${marker} ${block.content}`);
+        lines.push(`${indent}- ${line}`);
+        for(const line of parts){
+          if (!line.startsWith("collapsed:: ")) {
+            lines.push(`${hanging}${line}`);
+          }
+        }
       }
     }
 
-    // Recursively process children
-    if (block.children && block.children.length > 0) {
-      lines.push(...nestedJsonToMarkdown(block.children, level + 1));
+    if (children && children.length > 0) {
+      lines.push(...nestedJsonToMarkdown(children, level + 1));
     }
   });
 
   return lines;
 }
 
-// Parse Logseq blocks from file content
-function parseLogseqBlocks(content) {
-  const lines = content.split('\n');
-  const blocks = [];
-  const stack = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmedLine = line.trim();
-
-    // Skip empty lines and collapsed properties
-    if (!trimmedLine || trimmedLine === 'collapsed:: true') {
-      continue;
-    }
-
-    // Calculate indentation level - Logseq uses 2 spaces per level
-    // Convert tabs to spaces: 1 tab = 2 spaces for Logseq
-    let spaces = 0;
-    let tabIndex = 0;
-
-    // Count leading spaces before any tabs
-    while (tabIndex < line.length && line[tabIndex] === ' ') {
-      spaces++;
-      tabIndex++;
-    }
-
-    // Count tabs and convert to spaces (1 tab = 2 spaces in Logseq)
-    let tabs = 0;
-    while (tabIndex < line.length && line[tabIndex] === '\t') {
-      tabs++;
-      tabIndex++;
-    }
-
-    const level = Math.floor((spaces + (tabs * 2)) / 2);
-
-    // Extract marker and content
-    const markerMatch = trimmedLine.match(/^([-*+])\s+(.*)$/);
-    const marker = markerMatch ? markerMatch[1] : null;
-    const content = markerMatch ? markerMatch[2] : trimmedLine;
-
-    // Create block object
-    const block = {
-      id: `block-${i}`,
-      content: content,
-      level: level,
-      marker: marker,
-      priority: null,
-      children: []
-    };
-
-    // Place block in hierarchy
-    while (stack.length > level) {
-      stack.pop();
-    }
-
-    if (stack.length === 0) {
-      blocks.push(block);
-    } else {
-      stack[stack.length - 1].children.push(block);
-    }
-
-    stack.push(block);
-  }
-
-  return blocks;
+const shorthand = {
+  "~tasks": "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)",
+  "~links": '^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+"[^"\\r\\n]*")?\\s*\\))\\s*$'
 }
 
-// Filter Logseq blocks and remove orphaned children
-function filterLogseqBlocks(blocks, filterPatterns) {
-  return blocks
-    .map(block => filterBlockByPatterns(block, filterPatterns))
-    .filter(block => block !== null);
-}
-
-// Render Logseq blocks back to markdown
-function renderLogseqBlocks(blocks, level = 0) {
-  const lines = [];
-
-  blocks.forEach(block => {
-    if (block.content) {
-      // Preserve Logseq properties at the top level
-      if (level === 0 && block.content.includes('::')) {
-        lines.push(block.content);
-      } else {
-        // Add proper indentation based on level
-        const indent = '  '.repeat(level);
-        const marker = block.marker || '-';
-        lines.push(`${indent}${marker} ${block.content}`);
+function keeping(patterns, hit = true){
+  const miss = !hit;
+  const regexes = (patterns || []).map(what => shorthand[what] || what).map(pattern => new RegExp(pattern));
+  return regexes.length ? function(text){
+    for(const re of regexes) {
+      if (re.test(text)) {
+        return hit;
       }
     }
-
-    // Recursively process children
-    if (block.children && block.children.length > 0) {
-      lines.push(...renderLogseqBlocks(block.children, level + 1));
-    }
-  });
-
-  return lines.join('\n');
-}
-
-// Apply line-based filtering similar to the 'strip' tool
-function applyLineFilters(lines, filterPatterns) {
-  const result = [];
-  let stripMode = false;
-  let stripIndent = -1;
-  let potentialMultiline = false;
-  let multilineBuffer = [];
-
-  const getIndentLevel = (line) => {
-    const match = line.match(/^[ \t]*/);
-    return match ? match[0].length : 0;
-  };
-
-  const shouldStrip = (line) => {
-    // Strip leading outline markers for regex matching
-    // Handle various marker patterns: "- ", "\t- ", "  - ", etc.
-    const content = line.replace(/^[ \t]*[-*+][ \t]*/, '');
-    return filterPatterns.some(pattern => pattern.test(content));
-  };
-
-  const enterStripMode = (indent) => {
-    stripMode = true;
-    stripIndent = indent;
-    potentialMultiline = false;
-    multilineBuffer = [];
-  };
-
-  const exitStripMode = () => {
-    stripMode = false;
-    stripIndent = -1;
-  };
-
-  for (const line of lines) {
-    const indent = getIndentLevel(line);
-    const isEmpty = line.trim() === '';
-
-    // Handle multiline detection for TODO/DOING items
-    if (potentialMultiline && !isEmpty) {
-      // This is a continuation line of a multiline item
-      multilineBuffer.push(line);
-
-      // Check if this continuation line should trigger strip mode
-      if (shouldStrip(line)) {
-        enterStripMode(indent);
-      }
-      continue;
-    }
-
-    // Check if we're in strip mode
-    if (stripMode) {
-      if (indent <= stripIndent) {
-        // Exiting strip mode
-        exitStripMode();
-      } else {
-        // Still in nested content, skip
-        continue;
-      }
-    }
-
-    // Check for potential multiline items (TODO/DOING followed by soft return)
-    const isPotentialMultiline = /^[ \t]*- (TODO|DOING)([^:]*)$/.test(line);
-    if (isPotentialMultiline) {
-      // Check if this multiline item should also be stripped
-      if (shouldStrip(line)) {
-        enterStripMode(indent);
-        continue;
-      }
-      potentialMultiline = true;
-      multilineBuffer = [line];
-      continue;
-    }
-
-    // Normal line processing
-    if (shouldStrip(line)) {
-      enterStripMode(indent);
-      continue;
-    }
-
-    // Add line to output
-    result.push(line);
-  }
-
-  // Handle any remaining multiline buffer
-  if (multilineBuffer.length > 0) {
-    result.push(...multilineBuffer);
-  }
-
-  return result;
+    return miss;
+  } : null
 }
 
 function page(options){
@@ -565,10 +390,7 @@ function page(options){
   const append = options.append || null;
   const heading = options.heading !== false;
   const nest = options.nest || false;
-  const filters = options.less || [];
-
-  // Convert filter strings to RegExp objects
-  const filterPatterns = filters.map(pattern => new RegExp(pattern));
+  const keep = keeping(options.less, false) || keeping(options.only, true);
 
   return async function(named){
     try {
@@ -590,7 +412,7 @@ function page(options){
 
       // STAGE 1: Exception case - Simple MD format without nest and without filter
       // Bypass all processing and just print the page directly from file
-      if (format === 'md' && !nest && filterPatterns.length === 0) {
+      if (format === 'md' && !nest && keep == null) {
         if (!path) {
           return;
         }
@@ -601,7 +423,10 @@ function page(options){
           if (heading && content) {
             console.log(`# ${name}`);
           }
-          console.log(content + (heading ? "\n" : ""));
+          console.log(content);
+          if (heading) {
+            console.log("");
+          }
         } catch (fileError) {
           console.error(`Warning: Could not read page file: ${path} (${fileError.message})`);
         }
@@ -611,73 +436,17 @@ function page(options){
       // STAGE 2: Common Data Gathering
       // Gather all data into a common structure
       let data;
-      let fileContent = null;
 
-      // Determine if we should try file-based processing first
-      const shouldTryFile = path && !nest;
+      const result = await callLogseq('logseq.Editor.getPageBlocksTree', [name]);
 
-      if (shouldTryFile) {
-        try {
-          fileContent = (await Deno.readTextFile(path)).replace(/\s+$/, '');
-
-          if (format === 'md' && filterPatterns.length > 0) {
-            // Apply filtering to file content for MD format with filters
-            const lines = fileContent.split('\n');
-            const filteredLines = applyLineFilters(lines, filterPatterns);
-
-            if (heading && filteredLines.length > 0) {
-              console.log(`# ${name}`);
-            }
-            if (filteredLines.length > 0) {
-              console.log(filteredLines.join('\n') + (heading ? "\n" : ""));
-            }
-            return;
-          } else if (format === 'md') {
-            // Simple file-based processing for MD format without filters
-            if (heading && fileContent) {
-              console.log(`# ${name}`);
-            }
-            console.log(fileContent + (heading ? "\n" : ""));
-            return;
-          } else {
-            // For JSON format, convert file content to block structure
-            const lines = fileContent.split('\n');
-            data = lines.map((line, index) => ({
-              id: `file-line-${index}`,
-              content: line.replace(/^\s*[-\*\+]?\s*/, ''), // Remove markers for clean content
-              level: 0,
-              marker: line.match(/^\s*([-+*])\s+/)?.[1] || null,
-              priority: null,
-              children: []
-            }));
-          }
-        } catch (fileError) {
-          console.error(`Warning: Could not read page file: ${path} (${fileError.message}), falling back to API`);
-          // Fall through to API processing
-        }
-      }
-
-      // If we don't have data from file processing, use API
-      if (!data) {
-        const result = await callLogseq('logseq.Editor.getPageBlocksTree', [name]);
-
-        if (nest) {
-          // Use hierarchical structure from API
-          data = result && Array.isArray(result)
-            ? result.map(block => cleanBlockForOutline(block))
-            : [];
-        } else {
-          // Use flat structure from API
-          data = result || [];
-        }
-      }
+      data = result || [];
 
       // STAGE 3: Unified Filtering
       // Apply filters if any are provided (regardless of nest)
-      if (filterPatterns.length > 0) {
+      if (keep) {
         // Always use hierarchical filtering since API returns hierarchical data
         data = data
-          .map(block => filterBlockByPatterns(block, filterPatterns))
+          .map(block => selectBlock(block, keep))
           .filter(block => block !== null);
       }
 
@@ -686,24 +455,12 @@ function page(options){
         // Output data as JSON
         console.log(JSON.stringify(data, null, 2));
       } else if (format === 'md') {
-        // Convert to markdown format
         if (heading) {
           console.log(`# ${name}`);
         }
-
-        if (nest) {
-          // Convert hierarchical structure to markdown
-          const markdownLines = nestedJsonToMarkdown(data);
-          if (markdownLines.length > 0) {
-            console.log(markdownLines.join('\n'));
-          }
-        } else {
-          // Convert flat structure to markdown
-          data.forEach(block => {
-            if (block.content) {
-              console.log(block.content);
-            }
-          });
+        const markdownLines = nestedJsonToMarkdown(data);
+        if (markdownLines.length > 0) {
+          console.log(markdownLines.join('\n'));
         }
         if (heading) {
           console.log();
@@ -712,106 +469,73 @@ function page(options){
         throw new Error(`Unknown format: ${format}`);
       }
     } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+      abort(error);
     }
   }
 }
 
-function search(options){
-  const format = options.json ? 'json' : (options.format || 'md')
-  return async function (term) {
-    try {
-      const result = await callLogseq('logseq.Editor.search', [term])
-      if (format === 'json') {
-        console.log(JSON.stringify(result, null, 2))
-      } else if (format === 'md') {
-        // Extract page IDs; use uniqueness to minimize lookups
+function search(term){
+  return new Task(function(reject, resolve){
+    tskLogseq('logseq.Editor.search', [term]).
+      fork(reject, async function(result){
         const pageIds = new Set()
         result?.
           blocks?.
           map(block => block['block/page']).
           forEach(id => pageIds.add(id));
 
-        const promisedNames =
-          Array.from(pageIds).
+        const pageNames =
+          await Promise.all(Array.from(pageIds).
             map(async function(id){
               try {
                 const pageResult = await callLogseq('logseq.Editor.getPage', [id]);
                 return pageResult?.originalName;
               } catch (ex) {
-                console.error(`Warning: Could not get page ${id}: ${ex.message}`);
-                return null;
+                reject(new Error(`Warning: Could not get page ${id}: ${ex.message}`));
               }
-            });
+            }));
 
-        const names = (await Promise.all(promisedNames)).
-          filter(Boolean).
-          forEach(name => console.log(name));
-      } else {
-        throw new Error(`Unknown format: ${format}`);
-      }
-    } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
-    }
+        resolve(pageNames);
+      });
+  });
+}
+
+function path(){
+  return function(name){
+    return tskNames(name).
+      map(({path}) => path);
   }
 }
 
-function prereq(options){
-  return async function (name){
-    try {
-      if (!name) {
-        console.error('Error: Name argument is required');
-        console.error('Usage: notes prereq <name>');
-        Deno.exit(1);
-      }
-
-      const allPrereqs = await collectPrerequisites(name, options.debug);
-      const uniquePrereqs = removeDuplicates(allPrereqs);
-
-      uniquePrereqs.forEach(name => console.log(name));
-    } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
-    }
-  }
-}
-
-function named(options){
-  const format = options.json ? 'json' : (options.format || 'md')
-  return async function(id){
+function tskNamed(id){
+  return new Task(async function(reject, resolve){
     try {
       let result = await callLogseq('logseq.Editor.getPage', [id]);
 
       // If direct lookup failed and id looks like a number, try to find page by searching all pages
       if (!result && /^\d+$/.test(id)) {
-        try {
-          // Get all pages and find the one with matching numeric ID
-          const allPages = await callLogseq('logseq.Editor.getAllPages')
-          const matchingPage = allPages.find(page => page.id.toString() === id)
-          if (matchingPage) {
-            result = matchingPage
-          }
-        } catch (searchError) {
-          // If search fails, continue with null result
+        // Get all pages and find the one with matching numeric ID
+        const allPages = await callLogseq('logseq.Editor.getAllPages')
+        const matchingPage = allPages.find(page => page.id.toString() === id)
+        if (matchingPage) {
+          result = matchingPage
         }
+      }
+      if (result?.originalName) {
+        resolve(result.originalName);
+      } else {
+        resolve(result);
       }
 
-      if (format === 'json') {
-        console.log(JSON.stringify(result, null, 2))
-      } else if (format === 'md') {
-        if (result && result.originalName) {
-          console.log(result.originalName);
-        }
-        // If no page is found, output nothing (just exit silently)
-      } else {
-        throw new Error(`Unknown format: ${format}`);
-      }
     } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+      reject(error);
     }
+  });
+}
+
+function constantly(f){
+  return function(){
+    return f;
   }
 }
 
@@ -823,9 +547,33 @@ function alias(options){
   return has(options, "alias");
 }
 
-async function aka(...args){
-  const result = await alias({format: "md", silent: true})(...args);
+const aka = comp(async function(results){
+  const result = await results;
   return result?.[0];
+}, promise, alias({format: "md"}));
+
+function qryProps(prop, vals, mode = "any"){
+  return new Task(function(reject, resolve){
+    if (!['any', 'all'].includes(mode)){
+      reject(new Error(`Mode must be "any" or "all" and was "${mode}".`));
+    }
+    if (vals.length === 0) {
+      reject(new Error('At least one prop value is required'));
+    }
+    const conditions = vals.map(val => `[(contains? ?prop "${val}")]`).join(' ');
+    const whereClause = mode === 'any' ? `(or ${conditions})` : conditions;
+    return qry(`[:find (pull ?page [:block/original-name])
+                  :where
+                  [?page :block/properties ?props]
+                  [(get ?props :${prop}) ?prop]
+                  ${whereClause}]`).
+      fork(reject, function(results){
+        const names = results.map(function([item]){
+          return item?.["original-name"];
+        }).filter(name => name);
+        resolve(names);
+      });
+  })
 }
 
 function has(options, prop = null){
@@ -834,176 +582,146 @@ function has(options, prop = null){
     throw new Error('--all and --any options are mutually exclusive');
   }
 
-  const format = options.json ? 'json' : (options.format || 'md');
-  const mode = options.any ? 'any' : 'all'; // Default to 'all'
-  const fn = async function(prop, ...vals){
-    try {
-      if (vals.length === 0) {
-        throw new Error('At least one prop value is required');
-      }
-
-      const conditions = vals.map(val => `[(contains? ?prop "${val}")]`).join(' ');
-      const whereClause = mode === 'any' ? `(or ${conditions})` : conditions;
-      const query = `[:find (pull ?page [:block/original-name])
-                     :where
-                     [?page :block/properties ?props]
-                     [(get ?props :${prop}) ?prop]
-                     ${whereClause}]`;
-
-      const result = await qry(query);
-
-      if (format === 'json') {
-        return result;
-      } else if (format === 'md') {
-        return result?.
-          map(item => item?.[0]?.["original-name"]).
-          filter(name => name);
-      } else {
-        throw new Error(`Unknown format: ${format}`);
-      }
-    } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
-    }
+  const qry = function(prop, ...vals){
+    return qryProps(prop, vals, options.any ? 'any' : 'all');
   }
 
-  const exec = prop ? fn.bind(null, prop) : fn;
-
-  return async function(options, ...args){
-    const {silent, format = "md"} = options;
-    const result = await exec(options, ...args);
-    if (!silent) {
-      if (format == "md") {
-        result.forEach(name => console.log(name));
-      } else {
-        console.log(JSON.stringify(result, null, 2))
-      }
-    }
-    return result;
-  }
+  return prop ? qry.bind(null, prop) : qry;
 }
 
-const take = (xs, n = Infinity) =>
-  Array.isArray(xs) ? xs.slice(0, n) : [];
+function qryBacklinks(name, limit = Infinity){
+  return new Task(async function(reject, resolve){
+    try {
+      if (!name) {
+        reject(new Error('Page name is required'));
+      }
 
-async function qry(query, limit = Infinity){
-  return take(await callLogseq('logseq.DB.datascriptQuery', [query]), limit);
+      const items = await promise(qry(`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${name.toLowerCase()}"]]`, limit));
+
+      const pageIds = new Set()
+      items?.forEach(item => {
+        const block = item?.[0];
+        if (block?.page?.id) {
+          pageIds.add(block.page.id);
+        }
+      });
+
+      // Get page details for each unique page ID
+      const pageNames = new Set()
+      for (const pageId of pageIds) {
+        try {
+          const pageResult = await callLogseq('logseq.Editor.getPage', [pageId])
+          if (pageResult && pageResult.originalName) {
+            pageNames.add(pageResult.originalName);
+          }
+        } catch (pageError) {
+          // Continue with other pages if one fails
+          reject(new Error(`Warning: Could not get page ${pageId}: ${pageError.message}`));
+        }
+      }
+
+      resolve(Array.from(pageNames));
+
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 function backlinks(options){
-  const format = options.json ? 'json' : (options.format || 'md');
   const limit = options.limit ? parseInt(options.limit) : Infinity;
-  return async function(pageName){
-    try {
-      if (!pageName) {
-        throw new Error('Page name is required');
-      }
-
-      const items = await qry(`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${pageName.toLowerCase()}"]]`, limit);
-
-      if (format === 'json') {
-        console.log(JSON.stringify(items, null, 2));
-      } else {
-        // Extract unique page IDs from backlink results
-        const pageIds = new Set()
-        items?.forEach(item => {
-          const block = item?.[0];
-          if (block?.page?.id) {
-            pageIds.add(block.page.id);
-          }
-        });
-
-        // Get page details for each unique page ID
-        const pageNames = new Set()
-        for (const pageId of pageIds) {
-          try {
-            const pageResult = await callLogseq('logseq.Editor.getPage', [pageId])
-            if (pageResult && pageResult.originalName) {
-              pageNames.add(pageResult.originalName);
-            }
-          } catch (pageError) {
-            // Continue with other pages if one fails
-            console.error(`Warning: Could not get page ${pageId}: ${pageError.message}`);
-          }
-        }
-
-        // Output deduplicated page names (one per line)
-        pageNames.forEach(name => console.log(name));
-      }
-    } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
-    }
+  return function(name){
+    return qryBacklinks(name, limit);
   }
 }
 
 function query(options){
-  const format = options.json ? 'json' : (options.format || 'md');
   const limit = options.limit ? parseInt(options.limit) : Infinity;
-  return async function(query){
-    try {
-      if (!query) {
-        throw new Error('No query provided');
-      }
+  return function(query){
+    return qry(query, limit);
+  }
+}
 
-      const items = await qry(query, limit);
+function normalizeOptions(options){
+  const format = options.json ? 'json' : (options.format || 'md');
+  const heading = options.heading !== false;
+  return {format, heading}
+}
 
-      if (format == "json") {
-        console.log(JSON.stringify(items, null, 2));
+function qry(query, limit = Infinity){
+  return new Task(function(reject, resolve){
+    tskLogseq('logseq.DB.datascriptQuery', [query]).fork(reject, function(results){
+      resolve(take(results, limit));
+    });
+  });
+}
+
+function qryPage(name){
+  return qry(`[:find (pull ?p [*]) :where [?p :block/original-name "${name}"]]`);
+}
+
+function tskNames(name){
+  return name ? new Task(function(reject, resolve){
+    getNames(name).then(function(names){
+      if (names?.name) {
+        resolve(names);
       } else {
-        items.
-          map(item => item?.[0]).
-          map(content => content["replace"] ? content?.replace("\ncollapsed:: true", "")?.replace("\ncollapsed:: false") : content).
-          forEach(item => console.log(item));
+        reject(new Error(`Page not found: ${name}`));
       }
-    } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
+    }).catch(reject);
+  }) : Task.rejected(new Error('Page name is required'));
+}
+
+function normal(name){
+  return tskNames(name).map(({name}) => name);
+}
+
+function fmtProps({format}, propName = null){
+  return function([name, results]){
+    const pageData = results[0]?.[0] || null;
+
+    if (format === 'json') {
+      if (pageData) {
+        return [name, JSON.stringify(results, null, 2)];
+      }
+    } else if (format === 'md') {
+      return [name, propName ? pageData?.properties?.[propName] || null : Object.entries(pageData["properties-text-values"]).map(function([key, vals]){
+        return `${key}:: ${vals}`;
+      })];
+    } else {
+      throw new Error(`Unknown format: ${format}`);
+    }
+  }
+}
+
+function fmtBody({heading, format}){
+  return function([name, content]){
+    if (format === 'json') {
+      return [name, JSON.stringify(content, null, 2)];
+    } else if (format === 'md') {
+      const lines = [];
+      if (heading && name && content) {
+        lines.push(`## ${name}`);
+      }
+      if (content) {
+        typeof content == 'object' ? lines.push(...content) : lines.push(content);
+      }
+      if (heading && name && content) {
+        lines.push("");
+      }
+      return lines;
     }
   }
 }
 
 function props(options){
-  const format = options.json ? 'json' : (options.format || 'md');
-  const heading = options.heading !== false;
-  return async function(pageName, propName = null){
-    try {
-      if (!pageName) {
-        throw new Error('Page name is required');
-      }
-
-      const {name} = await getNames(pageName);
-      if (!name) {
-        throw new Error(`Page not found: ${pageName}`);
-      }
-
-      const result = await qry(`[:find (pull ?p [*]) :where [?p :block/original-name "${name}"]]`);
-      const pageData = result[0]?.[0] || null;
-
-      if (format === 'json') {
-        if (pageData) {
-          console.log(JSON.stringify(result, null, 2));
-        }
-      } else if (format === 'md') {
-        const values = propName ? pageData?.properties?.[propName] || null : Object.entries(pageData["properties-text-values"]).map(function([key, vals]){
-          return `${key}:: ${vals}`;
-        });
-        if (heading && name && values) {
-          console.log(`## ${name}`);
-        }
-        if (values) {
-          typeof values == 'object' ? values.forEach(value => console.log(value)) : console.log(values);
-        }
-        if (heading && name && values) {
-          console.log();
-        }
-      } else {
-        throw new Error(`Unknown format: ${format}`);
-      }
-    } catch (error) {
-      console.error('Error:', error.message);
-      Deno.exit(1);
-    }
+  const heading = options.heading;
+  const format = options.json ? 'json' : options.format || "md";
+  return function(pageName, propName = null){
+    return normal(pageName).
+      chain(Task.juxt(Task.of, qryPage)).
+      map(fmtProps({format, heading}, propName)).
+      map(fmtBody({format, heading}));
   }
 }
 
@@ -1012,10 +730,16 @@ function demand(...whats){
   return /*isPiped ?*/ whats.map(what => `[${what}]`).join(' ') /*: whats.map(what => `<${what}>`).join(' ')*/;
 }
 
+function tskGetAllPages(type){
+  return tskLogseq('logseq.Editor.getAllPages').map(function(results){
+    return type == 'all' ? results : type == "journal" ? results.filter(item => !!item["journal?"]) : results.filter(item => !item["journal?"]);
+  }).map(results => results.map(page => page?.originalName));
+}
+
 const program = new Command()
   .name('notes')
-  .description('Access and append to pages and journals')
-  .version('1.0.0')
+  .description('Retrieve and/or append to pages and journals')
+  .version('0.7.0')
   .stopEarly();
 
 program
@@ -1024,24 +748,11 @@ program
   .option('-t, --type <type:string>', 'Page type (regular|journal|all)', 'regular')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(async (options) => {
-    try {
-      const format = options.json ? 'json' : (options.format || 'md');
-      const type = options.type || 'regular';
-      const results = await callLogseq('logseq.Editor.getAllPages');
-      const selected = type == 'all' ? results : type == "journal" ? results.filter(item => !!item["journal?"]) : results.filter(item => !item["journal?"]);
-      if (format === 'json') {
-        console.log(JSON.stringify(selected, null, 2))
-      } else if (format === 'md') {
-        selected.map(item => item.originalName).forEach(name => console.log(name));
-      } else {
-        throw new Error(`Unknown format: ${format}`)
-      }
-    } catch (error) {
-      console.error('Error:', error.message)
-      Deno.exit(1)
+  .action(pipeable(function(options){
+    return function(){
+      return tskGetAllPages(options.type || "regular");
     }
-  });
+  }));
 
 program
   .command('page')
@@ -1053,8 +764,9 @@ program
   .option('--no-heading', 'Omit H1 heading and trailing blank line for MD format')
   .option('-a, --append <content:string>', 'Append content to page')
   .option('--nest', 'Use hierarchical nesting with format output')
-  .option('-l, --less <patterns:string>', 'Without content matching regex patterns', { collect: true })
-  .action(pipeable(page));
+  .option('-l, --less <patterns:string>', 'Less content matching regex patterns', { collect: true })
+  .option('-o, --only <patterns:string>', 'Only content matching regex patterns', { collect: true })
+  .action(oldPipeable(page));
 
 program
   .command('tags')
@@ -1082,8 +794,13 @@ program
   .command('prereq')
   .description('Recursively list page prerequisites')
   .arguments(demand("name"))
-  .option('--debug', 'Enable debug output to stderr')
-  .action(pipeable(prereq));
+  .action(pipeable(constantly(prerequisites)));
+
+program
+  .command('path')
+  .description('The path to the page file')
+  .arguments(demand("name"))
+  .action(pipeable(path));
 
 program
   .command('props')
@@ -1102,7 +819,7 @@ program
   .arguments(demand("term"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(pipeable(search));
+  .action(pipeable(constantly(search)));
 
 program
   .command('name')
@@ -1111,7 +828,7 @@ program
   .arguments(demand("id|name"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .action(pipeable(named));
+  .action(pipeable(constantly(tskNamed)));
 
 program
   .command('alias')
@@ -1133,7 +850,7 @@ program
 program
   .command('query')
   .alias('q')
-  .description('Execute Datalog query')
+  .description('Run Datalog query')
   .arguments(demand("query"))
   .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', 'none')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
@@ -1143,7 +860,7 @@ program
 if (import.meta.main) {
   if (Deno.args.length === 0) {
     program.showHelp();
-    Deno.exit(0);
+    abort();
   }
   await program.parse();
 }

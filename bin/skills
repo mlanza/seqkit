@@ -1,0 +1,5 @@
+#!/usr/bin/env pwsh
+Write-Output "# Skills"
+Write-Output "These skills endow you with abilities to do different jobs.  **When any one becomes relevant to the task, use ``about`` to retrieve it.**"
+Write-Output ""
+notes tags Skills | sort | notes props description
