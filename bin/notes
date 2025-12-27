@@ -260,9 +260,9 @@ const nonBlankLines = {
   transform: (line, c) => line.trim() && c.enqueue(line)
 }
 
-async function incoming(f, fallback) {
+async function incoming(one, only) {
   if (Deno.isatty(Deno.stdin.rid)) {   // If stdin is a TTY, no piping is happening
-    await fallback();
+    await only();
     return;
   }
 
@@ -274,12 +274,12 @@ async function incoming(f, fallback) {
   let received = false;
   try {
     for await (const line of streamed) {
-      await f(line);
+      await one(line);
       received = true;
     }
   } finally {
     if (!received) {
-      await fallback();
+      await only();
     }
   }
 }
