@@ -56,14 +56,6 @@ These can be issued directly in [OpenCode](https://opencode.ai) — by you or th
 
 All `notes` commands receive the primary operand directly or via stdin.  This is useful for composing compound commands.
 
-## Querying via Datalog
-
-Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) spine.  With Datalog queries in easy reach, there's no limit to the queries and custom commands you can build.  The innards build on this.  It's one reason to prefer Logseq to Obsidian.
-
-```zsh
-$ notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
-```
-
 ## Getting Started
 
 Have `pwsh` and `deno` installed.  These runtimes were targeted over `zsh` and `bash` to accommodate everyone, whether on Mac, Linux or Windows.
@@ -82,6 +74,14 @@ Set these environment variables:
 * **NOTES_TOKEN** - a token you configured for the HTTP API
 
 Once done, start Logseq, start your shell and issue a few commands.
+
+## Querying via Datalog
+
+Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) spine.  With Datalog queries in easy reach, there's no limit to the queries and custom commands you can build.  The innards build on this.  It's one reason to prefer Logseq to Obsidian.
+
+```zsh
+$ notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
+```
 
 ## OpenCode Custom Tools
 
