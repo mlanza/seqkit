@@ -1,2 +1,2 @@
 #!/usr/bin/env pwsh
-notes prereq $args[0] | notes page --less "@tasks" --less "@links"
+notes prereq $args[0] | notes page --less ~tasks --less ~links
