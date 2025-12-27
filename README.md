@@ -85,7 +85,7 @@ Set these environment variables:
 
 Once done, start Logseq, start your shell and issue a few commands.
 
-## Going Further
+## Going Deeper
 
 ### Querying via Datalog
 
