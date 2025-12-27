@@ -1,0 +1,8 @@
+#!/usr/bin/env pwsh
+param(
+  [int]$Days
+)
+
+for ($i = 0; $i -le $Days; $i++) {
+  (Get-Date).AddDays(-$i).ToString('yyyy-MM-dd')
+}

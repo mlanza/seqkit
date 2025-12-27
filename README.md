@@ -4,7 +4,7 @@ Pronounced "seekit," it's a toolkit for Logseq.  As a general rule, composable c
 
 Your commonplace book is a near perfect spot for keeping the sort of knowhow an agent needs to thrive.  It provides an excellent store for skills.  Any page tagged `Skills` with a `description` property describing the skill is ready to go.
 
-Use `notes` to:
+Sample commands:
 
 * `notes pages` - list all pages
 * `notes page Atomic | wikilinks` - to view wikilinks on a page
@@ -15,27 +15,20 @@ Use `notes` to:
 * `echo "Atomic\nCosmos" | notes tags`
 * `skills` - for a skills menu
 * `about Coding` - to lookup the Coding skill
+* `ago 90 | notes page` - to review 90 days of journal entries
 
 Most commands accept the primary operand directly or via stdin.
 
 You must have Logseq running in Developer Mode.  This can be flipped on under Settings > Advanced.  After that, enable the local HTTP API. It appears as a button in the upper right.  This effectively treats your local-first install of Logseq as an MCP server.
 
-Add to your `.zshrc`:
-```sh
-ago() {
-  for i in $(seq 0 "$1"); do date -v-"$i"d +%Y-%m-%d; done;
-}
-```
-
-So that you can review journal entries from the last 90 days:
-
-```sh
-$ ago 90 | notes page
-```
-
 ## Environment
 
 Ensure `pwsh` is installed.
+
+Install the scripts in your path however you like:
+```zsh
+export PATH=~/Documents/seqkit/bin:$PATH
+```
 
 Ensure you've set these environment variables:
 
