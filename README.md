@@ -9,10 +9,11 @@ That also makes it the ideal store for skills.  Tag a page `Skills` and describe
 Getting sample frontmatter properties:
 
 ```zsh
-$ notes props Coding --no-heading
+$ notes props Coding
 ```
 
 ```md
+## Coding
 tags:: AI, [[Making apps]], Skills
 alias:: [[Agentic Coding]], [[Spec Coding]], [[Vibe Coding]]
 prerequisites:: [[Atomic Way]], [[Coding Style]]
