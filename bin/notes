@@ -1,4 +1,4 @@
-#!/usr/bin/env deno run --allow-net --allow-env --allow-read
+#!/usr/bin/env deno run --allow-all
 import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
 import { TextLineStream } from "https://deno.land/std/streams/text_line_stream.ts";
 
@@ -115,15 +115,15 @@ function tskNormalizedName(name){
 
 const getNormalizedName = comp(promise, tskNormalizedName);
 
-function tskIsJournal(name){
+function tskJournalDay(name){
   return tskLogseq('logseq.Editor.getPage', [name]).map(function(page){
     if (!page) return false;
-    const { ['journal?']: journal } = page;
-    return journal;
+    const { journalDay } = page;
+    return journalDay;
   });
 }
 
-const isJournal = comp(promise, tskIsJournal);
+const journalDay = comp(promise, tskJournalDay);
 
 async function exists(path){
   try {
@@ -138,10 +138,16 @@ function encode(name){
   return name ? encodeURIComponent(name).replaceAll("%20", " ") : null;
 }
 
-async function getFilePath(journal, name){
-  const where = journal ? "journals" : "pages";
-  const normalized = journal ? name.replaceAll("-", "_").split(" ")?.[0].trim() : encode(name.replaceAll("/", ".").trim());
-  return await exists(`${NOTES_DIR}/${where}/${normalized}.md`);
+function formatYYYYMMDD(n) {
+  const s = String(n).padStart(8, '0')
+  return s.slice(0, 4) + '_' + s.slice(4, 6) + '_' + s.slice(6, 8)
+}
+
+
+function getFilePath(day, name){
+  const where = day ? "journals" : "pages";
+  const normalized = day ? formatYYYYMMDD(day) : encode(name.replaceAll("/", ".").trim());
+  return `${NOTES_DIR}/${where}/${normalized}.md`;
 }
 
 const je = /^(?:\d{8}|\d{4}-\d{2}-\d{2})$/;
@@ -160,13 +166,13 @@ const getJournalPage = comp(promise, tskGetJournalPage);
 
 async function getNames(given){
   if (!given) return null;
-  const named = je.test(given) ? await getJournalPage(given) : given;
-  const normalized = await getNormalizedName(named);
+  const m = given.match(/(\d{4})-?(\d{2})-?(\d{2})(?!\d)/)
+  const normalized = await getNormalizedName(given) || await getJournalPage(given);
   const alias = normalized ? await aka(normalized) : null;
   const name = alias || normalized || given; // fallback to given if normalized is null
-  const journal = name ? await isJournal(name) : null;
-  const path = name ? await getFilePath(journal, name) : null;
-  const names = {given, journal, normalized, name, path};
+  const day = m ? parseInt(m[1] + m[2] + m[3]) : await journalDay(name);
+  const path = name ? getFilePath(day, name) : null;
+  const names = {given, day, normalized, name, path};
   //console.log({names});
   return names;
 }
@@ -413,7 +419,7 @@ function page(options){
       // STAGE 1: Exception case - Simple MD format without nest and without filter
       // Bypass all processing and just print the page directly from file
       if (format === 'md' && !nest && keep == null) {
-        if (!path) {
+        if (!exists(path)) {
           return;
         }
 
@@ -856,6 +862,48 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
   .action(pipeable(query));
+
+program
+  .command('post')
+  .description('Create a page or journal entry')
+  .arguments(demand("name"))
+  .option('--dest', 'Display the destination file without (over)writing it')
+  .option('--overwrite', 'Overwrite existing file')
+  .action(async (options, name) => {
+    try {
+      if (!name) {
+        throw new Error('Name argument is required');
+      }
+
+      if (!NOTES_DIR) {
+        throw new Error('NOTES_DIR environment variable is not set');
+      }
+
+      const {path} = await getNames(name);
+
+      if (options.dest) {
+        console.log(path);
+        return;
+      }
+
+      const hasStdin = !Deno.isatty(Deno.stdin.rid);
+      if (!hasStdin) {
+        throw new Error('Must supply content via stdin.');
+      }
+
+      if (!options.overwrite && await exists(path)) {
+        throw new Error(`File already exists: ${path}. Use --overwrite to replace it.`);
+      }
+
+      const content = await Deno.readTextFile('/dev/stdin');
+
+      await Deno.writeTextFile(path, content);
+      console.log(`Created: ${path}`);
+
+    } catch (error) {
+      abort(error);
+    }
+  });
 
 if (import.meta.main) {
   if (Deno.args.length === 0) {
