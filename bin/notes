@@ -513,23 +513,6 @@ function path(){
   }
 }
 
-function existsCheck(){
-  return function(name){
-    return tskNames(name).
-      chain(({path}) => {
-        return new Task(function(reject, resolve){
-          exists(path).then(result => {
-            if (result) {
-              resolve(result);
-            } else {
-              resolve([]);
-            }
-          }).catch(reject);
-        });
-      });
-  }
-}
-
 function tskNamed(id){
   return new Task(async function(reject, resolve){
     try {
@@ -824,12 +807,6 @@ program
   .description('The path to the page file')
   .arguments(demand("name"))
   .action(pipeable(path));
-
-program
-  .command('exists')
-  .description('Check if page file exists and return path if it does')
-  .arguments(demand("name"))
-  .action(pipeable(existsCheck));
 
 program
   .command('props')
