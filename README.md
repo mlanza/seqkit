@@ -130,14 +130,14 @@ printf "%s\n" Atomic Clojure\ Way | xargs -I {} notes tags {}
 
 Show what tags are on these pages.  Equivalents:
 ```zsh
-list Atomic Clojure\ Way | notes props tags
+list Atomic "Clojure Way" | notes props tags
 ```
 ```zsh
 notes props Atomic tags
-notes props Clojure\ Way tags
+notes props "Clojure Way" tags
 ```
 ```zsh
-printf "%s\n" Atomic Clojure\ Way | xargs -I {} notes props {} tags
+printf "%s\n" Atomic "Clojure Way" | xargs -I {} notes props {} tags
 ```
 ```pwsh
 'Atomic', 'Clojure Way' | % { notes props $_ tags } # powershell
