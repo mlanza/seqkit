@@ -20,7 +20,7 @@ $ notes props Coding
 ## Coding
 tags:: AI, [[Making apps]], Skills
 alias:: [[Agentic Coding]], [[Spec Coding]], [[Vibe Coding]]
-prerequisites:: [[Atomic Way]], [[Coding Style]]
+prerequisites:: [[Clojure Way]], [[Coding Style]]
 description:: Guidance for writing, refactoring or fixing code
 ```
 
