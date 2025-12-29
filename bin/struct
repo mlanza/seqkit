@@ -3,7 +3,7 @@
 # Parse stdin into a hierarchical structure based on indentation
 # Output as PowerShell objects with level, content, and children
 
-$lines = $Input | Where-Object { $_ -ne "" }
+$lines = $Input
 $structure = @()
 $stack = [System.Collections.ArrayList]@()
 

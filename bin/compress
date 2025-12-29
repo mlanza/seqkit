@@ -1,0 +1,21 @@
+#!/usr/bin/env pwsh
+
+# Compress stdin: dedupe consecutive blank lines to single blank line
+
+$lines = $Input | ForEach-Object { $_ }
+$prevLineWasBlank = $false
+
+foreach ($line in $lines) {
+    $currentLineIsBlank = [string]::IsNullOrWhiteSpace($line)
+    
+    if (-not $currentLineIsBlank) {
+        # Non-blank line, output it
+        Write-Output $line
+        $prevLineWasBlank = $false
+    } elseif (-not $prevLineWasBlank) {
+        # First blank line in sequence, output it
+        Write-Output ""
+        $prevLineWasBlank = $true
+    }
+    # Skip subsequent blank lines
+}
