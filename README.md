@@ -125,7 +125,7 @@ notes tags Cosmos
 printf "%s\n" Atomic Cosmos | xargs -I {} notes tags {}
 ```
 ```pwsh
-list Atomic Cosmos | % { notes tags $_ } # powershell
+'Atomic', 'Cosmos' | % { notes tags $_ } # powershell
 ```
 
 Show what tags are on these pages.  Equivalents:
@@ -140,7 +140,7 @@ notes props Cosmos tags
 printf "%s\n" Atomic Cosmos | xargs -I {} notes props {} tags
 ```
 ```pwsh
-list Atomic Cosmos | % { notes props $_ tags } # powershell
+'Atomic', 'Cosmos' | % { notes props $_ tags } # powershell
 ```
 
 ### OpenCode Custom Tools
