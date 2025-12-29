@@ -45,6 +45,7 @@ Sample tools calls:
 * `notes page Atomic | wikilinks | notes page` - list all wikilinked pages
 * `notes page Atomic | links` - to view links on page
 * `notes page Atomic` - list a particular page by name
+* `about "Agent Instructions" | doc --para | cat -s` - to generate AGENTS.md content from page with its prerequisites.
 * `notes tags Programming` - list notes tagged Programming
 * `notes name programming | notes t` - normalize the name and find pages tagged Programming
 * `notes tags Programming | notes page` - pipe names into page to list content for a bunch of pages
