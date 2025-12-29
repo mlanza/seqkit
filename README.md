@@ -113,7 +113,9 @@ The `about` tool filters out blocks which are themselves either links or TODOs. 
 
 The kit was designed to minimize ceremony, to compose, and to mind the Unix philosophy.  The `notes` commands, for example, can receive the primary operand directly or via stdin.  With embedded spaces being somewhat typical, that's modeled below.
 
-Show what pages have these tags.  Equivalents:
+#### Show pages having certain tags
+
+Equivalents:
 ```zsh
 list Atomic Clojure\ Way | notes tags
 ```
@@ -128,7 +130,9 @@ printf "%s\n" Atomic Clojure\ Way | xargs -I {} notes tags {}
 'Atomic', 'Clojure Way' | % { notes tags $_ } # powershell
 ```
 
-Show what tags are on these pages.  Equivalents:
+#### Show tags on certain pages
+
+Equivalents:
 ```zsh
 list Atomic "Clojure Way" | notes props tags
 ```
