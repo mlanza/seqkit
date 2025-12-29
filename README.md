@@ -115,32 +115,32 @@ The kit was designed to minimize ceremony, to compose, and to mind the Unix phil
 
 Show what pages have these tags.  Equivalents:
 ```zsh
-list Atomic Cosmos | notes tags
+list Atomic "Clojure Way" | notes tags
 ```
 ```zsh
 notes tags Atomic
-notes tags Cosmos
+notes tags "Clojure Way"
 ```
 ```zsh
-printf "%s\n" Atomic Cosmos | xargs -I {} notes tags {}
+printf "%s\n" Atomic "Clojure Way" | xargs -I {} notes tags {}
 ```
 ```pwsh
-'Atomic', 'Cosmos' | % { notes tags $_ } # powershell
+'Atomic', 'Clojure Way' | % { notes tags $_ } # powershell
 ```
 
 Show what tags are on these pages.  Equivalents:
 ```zsh
-list Atomic Cosmos | notes props tags
+list Atomic "Clojure Way" | notes props tags
 ```
 ```zsh
 notes props Atomic tags
-notes props Cosmos tags
+notes props "Clojure Way" tags
 ```
 ```zsh
-printf "%s\n" Atomic Cosmos | xargs -I {} notes props {} tags
+printf "%s\n" Atomic "Clojure Way" | xargs -I {} notes props {} tags
 ```
 ```pwsh
-'Atomic', 'Cosmos' | % { notes props $_ tags } # powershell
+'Atomic', 'Clojure Way' | % { notes props $_ tags } # powershell
 ```
 
 ### OpenCode Custom Tools
