@@ -15,9 +15,7 @@ function Render-Node {
     # Remove one level of indentation/bullet only from level 0 content
     $content = $node.content
     if ($level -eq 0) {
-        if ($content -match '^- ') {
-            $content = $content.Substring(2)
-        } elseif ($content -match '^  ') {
+        if ($content -match '^- ' -or $content -match '^  ') {
             $content = $content.Substring(2)
         }
     }
