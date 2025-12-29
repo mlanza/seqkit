@@ -105,7 +105,7 @@ Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) sp
 $ notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
 ```
 
-### How `about` Got That Way
+### `about` Design Rationale
 
 The `about` tool filters out blocks which are themselves either links or TODOs.  This is because of how I keep notes, combining [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done) content in one spot.  This includes loose links — related posts and products or content to be examined.  TODOs are real work, half-baked ideas, or maybe links marked as future reading.  That's all noise to an agent which is why it gets filtered out.  Links which are embedded in statements as hyperlinks are kept.
 
