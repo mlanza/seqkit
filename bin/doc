@@ -1,0 +1,16 @@
+#!/usr/bin/env pwsh
+
+# Process stdin to remove one level of bullet depth
+# Lines starting with "- " or "  " have their leading characters removed
+
+$Input | ForEach-Object {
+    $line = $_
+    if ($line -match '^- ') {
+        # Remove "- " from beginning
+        $line = $line.Substring(2)
+    } elseif ($line -match '^  ') {
+        # Remove "  " from beginning
+        $line = $line.Substring(2)
+    }
+    Write-Output $line
+}
