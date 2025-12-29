@@ -111,7 +111,7 @@ The `about` tool filters out blocks which are themselves either links or TODOs. 
 
 ### Ergonomics
 
-The kit was designed to minimize ceremony, to compose, and to mind the Unix philosophy.  The `notes` commands, for example, can receive the primary operand directly or via stdin.  With embedded spaces being somewhat typical, that's modeled below.
+The kit was designed to minimize ceremony, to compose, and to mind the Unix philosophy.  The `notes` commands, for example, can receive the primary operand directly or via stdin.  With embedded spaces being an ordinary concern, that's modeled below.
 
 #### Show pages having certain tags
 
