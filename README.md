@@ -109,7 +109,7 @@ $ notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
 
 The `about` tool filters out blocks which are themselves either links or TODOs.  This is because of how I keep notes, combining [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done) content in one spot.  This includes loose links — related posts and products or content to be examined.  TODOs are real work, half-baked ideas, or maybe links marked as future reading.  That's all noise to an agent which is why it gets filtered out.  Links which are embedded in statements as hyperlinks are kept.
 
-## Composition-friendly Tooling
+### Composition-friendly Tooling
 
 The `notes` commands can receive the primary operand directly or via stdin.  This is useful for composing compound commands with a bit less ceremony.  The tools were designed to mind the Unix philosophy.
 
