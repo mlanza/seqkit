@@ -885,6 +885,7 @@ program
         throw new Error('Must supply content via stdin.');
       }
 
+      const action = options.overwrite ? "Overwrote" : "Wrote";
       if (!options.overwrite && await exists(path)) {
         throw new Error(`File already exists: ${path}. Use --overwrite to replace it.`);
       }
@@ -892,7 +893,7 @@ program
       const content = await Deno.readTextFile('/dev/stdin');
 
       await Deno.writeTextFile(path, content);
-      console.log(`Created: ${path}`);
+      console.log(`${action}: ${path}`);
 
     } catch (error) {
       abort(error);
