@@ -66,8 +66,6 @@ Sample tools calls:
 
 These can be issued directly in [OpenCode](https://opencode.ai) — by you or the agent.  Being command line, these can be used by any agentic runtime (Claude, Gemini, etc.) with [computer use](https://www.anthropic.com/news/3-5-models-and-computer-use).
 
-All `notes` commands receive the primary operand directly or via stdin.  This is useful for composing compound commands.  The tools were designed to mind the Unix philosophy and support composition.
-
 ## Getting Started
 
 Have `pwsh` and `deno` and `node` installed.  These runtimes were targeted over `zsh` and `bash` to accommodate everyone, whether on Mac, Linux or Windows.
@@ -110,6 +108,40 @@ $ notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
 ### How `about` Got That Way
 
 The `about` tool filters out blocks which are themselves either links or TODOs.  This is because of how I keep notes, combining [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done) content in one spot.  This includes loose links — related posts and products or content to be examined.  TODOs are real work, half-baked ideas, or maybe links marked as future reading.  That's all noise to an agent which is why it gets filtered out.  Links which are embedded in statements as hyperlinks are kept.
+
+## Composition-Friendly Tooling
+
+The `notes` commands can receive the primary operand directly or via stdin.  This is useful for composing compound commands with a bit less ceremony.  The tools were designed to mind the Unix philosophy.
+
+Show what pages have these tags.  Equivalents:
+```zsh
+list Atomic Cosmos | notes tags
+```
+```zsh
+notes tags Atomic
+notes tags Cosmos
+```
+```zsh
+list Atomic Cosmos | xargs -I {} notes tags {}
+```
+```pwsh
+list Atomic Cosmos | % { notes tags $_ }
+```
+
+Show what tags are on these pages.  Equivalents:
+```zsh
+list Atomic Cosmos | notes props tags
+```
+```zsh
+notes props Atomic tags
+notes props Cosmos tags
+```
+```zsh
+list Atomic Cosmos | xargs -I {} notes props {} tags
+```
+```pwsh
+list Atomic Cosmos | % { notes props $_ tags }
+```
 
 ### OpenCode Custom Tools
 
