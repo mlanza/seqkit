@@ -906,6 +906,7 @@ program
 // External command stubs for help visibility
 program
   .command('list')
+  .alias('l')
   .arguments("<item> [item...]")
   .description('List items');
 
@@ -915,6 +916,7 @@ program
 
 program
   .command('day')
+  .alias('d')
   .description('List one or more days')
   .action(() => console.log('External command - routed to day script'))
 
