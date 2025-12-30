@@ -4,9 +4,9 @@ import { TextLineStream } from "https://deno.land/std/streams/text_line_stream.t
 
 import Task from "https://esm.sh/data.task";
 
-const NOTES_ENDPOINT = Deno.env.get('NOTES_ENDPOINT') || '';
-const NOTES_TOKEN = Deno.env.get('NOTES_TOKEN') || '';
-const NOTES_DIR = Deno.env.get('NOTES_DIR') || '';
+const LOGSEQ_ENDPOINT = Deno.env.get('LOGSEQ_ENDPOINT') || '';
+const LOGSEQ_TOKEN = Deno.env.get('LOGSEQ_TOKEN') || '';
+const LOGSEQ_REPO = Deno.env.get('LOGSEQ_REPO') || '';
 
 const comp = (...fns) => (...args) =>
   fns.reduceRight((acc, fn, i) =>
@@ -147,7 +147,7 @@ function formatYYYYMMDD(n) {
 function getFilePath(day, name){
   const where = day ? "journals" : "pages";
   const normalized = day ? formatYYYYMMDD(day) : encode(name.replaceAll("/", ".").trim());
-  return `${NOTES_DIR}/${where}/${normalized}.md`;
+  return `${LOGSEQ_REPO}/${where}/${normalized}.md`;
 }
 
 const je = /^(?:\d{8}|\d{4}-\d{2}-\d{2})$/;
@@ -185,10 +185,10 @@ function tskLogseq(method, args){
         payload.args = args
       }
 
-      const response = await fetch(NOTES_ENDPOINT, {
+      const response = await fetch(LOGSEQ_ENDPOINT, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${NOTES_TOKEN}`,
+          'Authorization': `Bearer ${LOGSEQ_TOKEN}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
@@ -877,8 +877,8 @@ program
         throw new Error('Name argument is required');
       }
 
-      if (!NOTES_DIR) {
-        throw new Error('NOTES_DIR environment variable is not set');
+      if (!LOGSEQ_REPO) {
+        throw new Error('LOGSEQ_REPO environment variable is not set');
       }
 
       const {path} = await getNames(name);

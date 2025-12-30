@@ -6,10 +6,10 @@ param(
 
 $paths =
   if ($Type) {
-    "$env:NOTES_DIR/$Type"
+    "$env:LOGSEQ_REPO/$Type"
   } else {
-    "$env:NOTES_DIR/pages",
-    "$env:NOTES_DIR/journals"
+    "$env:LOGSEQ_REPO/pages",
+    "$env:LOGSEQ_REPO/journals"
   }
 
 Get-ChildItem $paths -Recurse |

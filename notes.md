@@ -41,7 +41,7 @@ Journal pages can be identified by these PageEntity properties:
 
 ### Integration Patterns
 - Uses `callLogseq()` function for all Logseq API interactions
-- Environment variables for configuration: `LOGSEQ_TOKEN`, `NOTES_DIR`
+- Environment variables for configuration: `LOGSEQ_TOKEN`, `LOGSEQ_REPO`
 - Standard HTTP endpoint: `http://127.0.0.1:12315/api`
 
 ## Commands
@@ -122,7 +122,7 @@ notes page [name] [-f|--format <format>] [--json] [--no-heading] [--less <patter
 **Content Display Mode** (default):
 - Single page: Displays content for specified page
 - Stdin mode: Reads page names from stdin, one per line, processes each
-- MD format: Reads from filesystem using `NOTES_DIR/pages/{name}.md`
+- MD format: Reads from filesystem using `LOGSEQ_REPO/pages/{name}.md`
   - Adds H1 heading (`# {name}`) and trailing blank line unless `--no-heading` specified
   - Trims trailing blank lines from content
   - Adds blank line separator between multiple pages
@@ -254,7 +254,7 @@ notes journal [date] [-f|--format <format>] [--json] [--no-heading] [-a|--append
 - **Content Display Mode** (default):
   - Single date: Displays content for specified journal. If no date provided, defaults to today (0)
   - Stdin mode: Reads dates from stdin, one per line, processes each (only when no arguments provided)
-  - MD format: Reads from filesystem using `NOTES_DIR/pages/{journal-name}.md`
+  - MD format: Reads from filesystem using `LOGSEQ_REPO/pages/{journal-name}.md`
   - JSON format: Uses `logseq.Editor.getPageBlocksTree` API
   - Integer inputs are automatically detected as day offsets from today
 - **Append Mode** (`--append`):
@@ -626,7 +626,7 @@ notes query '[:find ?p :where [?p :block/name]]' --json
 
 ### Required Environment Variables
 - `LOGSEQ_TOKEN`: Authentication token for Logseq API
-- `NOTES_DIR`: Base directory for Logseq notes (used by `page` command MD format)
+- `LOGSEQ_REPO`: Base directory for Logseq notes (used by `page` command MD format)
 
 ### API Configuration
 - Endpoint: `http://127.0.0.1:12315/api`
@@ -668,7 +668,7 @@ Warning: <descriptive message>
 
 #### `getPagePathFromName(name)`
 - Converts page name to filesystem path
-- Pattern: `${NOTES_DIR}/pages/${name}.md`
+- Pattern: `${LOGSEQ_REPO}/pages/${name}.md`
 - Basic trimming and normalization
 
 #### `extractPrerequisites(content)`
