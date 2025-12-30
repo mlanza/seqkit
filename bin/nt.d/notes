@@ -928,6 +928,11 @@ program
   .action(() => console.log('External command - routed to about script'))
 
 program
+  .command('seen')
+  .description('Filters down to seen items')
+  .arguments("🚚");
+
+program
   .command('docmode')
   .description('Represent content as documentation')
   .arguments("🚚");
@@ -943,18 +948,13 @@ program
   .arguments("🚚");
 
 program
-  .command('seen')
-  .description('Filters down to seen items')
+  .command('wikilinks')
+  .description('Extracts wikilinks')
   .arguments("🚚");
 
 program
   .command('wikify')
   .description('Convert markdown headers to wiki format')
-  .arguments("🚚");
-
-program
-  .command('wikilinks')
-  .description('Extracts wikilinks')
   .arguments("🚚");
 
 if (import.meta.main) {
