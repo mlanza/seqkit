@@ -6,7 +6,7 @@ if (!sub) {
   Deno.exit(2)
 }
 
-let exe = `${import.meta.dirname}/${sub}`
+let exe = `${import.meta.dirname}/nt.d/${sub}`
 
 const cmd = new Deno.Command(exe, {
   args: rest,
@@ -22,7 +22,7 @@ try {
 } catch (err) {
   if (err instanceof Deno.errors.NotFound) {
     // Delegate to notes as catchall
-    exe = `${import.meta.dirname}/notes`
+    exe = `${import.meta.dirname}/nt.d/notes`
     const notesCmd = new Deno.Command(exe, {
       args: [sub, ...rest],
       stdin: "inherit",
