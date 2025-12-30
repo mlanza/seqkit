@@ -5,7 +5,7 @@ $input |
   ForEach-Object {
     foreach ($m in $_.Matches) {
       if ($m.Value -match '^\[([^\]]+)\]\((https?:\/\/[^\s)]+)') {
-        "$($Matches[2]) - $($Matches[1])"
+        "$($Matches[2]) => $($Matches[1])"
       } else {
         $m.Value
       }
