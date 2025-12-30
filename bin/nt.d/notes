@@ -893,7 +893,7 @@ program
 program
   .command('list')
   .alias('l')
-  .arguments("<item> [item...]")
+  .arguments("[item...]")
   .description('List items');
 
 program
