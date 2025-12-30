@@ -62,8 +62,8 @@ Sample tools calls:
 * `nt day $(seq 0 -30) | nt page | nt links` - links from latest journal entries
 * `nt day $(seq 0 -30) | nt page --only "~tasks"` - to display only TODOs
 * `nt day $(seq 0 -30) | nt page --less "~tasks"` - to display everything but TODOs
-* `nt d $(seq 0 -30) | nt p` - a range of journal entries (`zsh`)
-* `nt d (0..-30) | nt p` - a range of journal entries (`pwsh`)
+* `nt day $(seq 0 -30) | nt page` - a range of journal entries (`zsh`)
+* `nt day (0..-30) | nt page` - a range of journal entries (`pwsh`)
 
 These can be issued directly in [OpenCode](https://opencode.ai), Gemini, Claude, etc.  — by you or by any agent with with [computer use](https://www.anthropic.com/news/3-5-models-and-computer-use).
 
@@ -118,7 +118,7 @@ The kit was designed to minimize ceremony, to compose, and to mind the Unix phil
 
 Equivalents:
 ```zsh
-nt l Atomic Clojure\ Way | nt t
+nt list Atomic Clojure\ Way | nt t
 ```
 ```zsh
 nt tags Atomic
