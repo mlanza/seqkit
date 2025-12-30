@@ -1,6 +1,6 @@
 # Note
 
-**Note** is command line access to [Logseq](https://logseq.com) knowhow.  Prefer command line tools to MCP tools because they're ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike. It's easier to wrap a command line tool as an MCP server, than the reverse.
+**Note** is command line access to [Logseq](https://logseq.com) knowhow.  Command line tools are ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike. Plus, it's easier to wrap a command line tool as an MCP server, than the reverse.
 
 <p align="center">
   <img src="./images/logo.png" style="width: 250px; max-width: 100%;" />
