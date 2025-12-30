@@ -118,7 +118,7 @@ The kit was designed to minimize ceremony, to compose, and to mind the Unix phil
 
 Equivalents:
 ```zsh
-nt list Atomic Clojure\ Way | nt t
+nt list Atomic Clojure\ Way | nt tags
 ```
 ```zsh
 nt tags Atomic
