@@ -73,7 +73,7 @@ Have `pwsh` and `deno` and `node` installed.  These runtimes were targeted over 
 
 Run Logseq in Developer Mode.  Flip it on under `Settings > Advanced`.  Then enable the local HTTP API via the button in the upper right. You must [set up a token](https://wiki.jamesravey.me/books/software-misc/page/logseq-http-api).  This setup and tooling transforms Logseq into a lightweight MCP server.
 
-Install tools in your path however you like:
+Install it to your path however you like:
 ```zsh
 export PATH=~/Documents/nt/bin:$PATH
 ```
