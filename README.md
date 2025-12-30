@@ -1,6 +1,6 @@
 # Notes
 
-A tool for exposing [Logseq](https://logseq.com) knowhow to agents.  Prefer command line tools to MCP tools because they're ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike. It's easier to wrap a command line tool as an MCP server, than the reverse.
+**Notes** is a tool for exposing [Logseq](https://logseq.com) knowhow to agents.  Prefer command line tools to MCP tools because they're ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike. It's easier to wrap a command line tool as an MCP server, than the reverse.
 
 <p align="center">
   <img src="./images/logo.png" style="width: 250px; max-width: 100%;" />
