@@ -1,6 +1,6 @@
-# Seqkit
+# Notes
 
-A toolkit for exposing [Logseq](https://logseq.com) knowhow to agents.  Prefer command line tools to MCP tools because they're ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike. It's easier to wrap a command line tool as an MCP server, than the reverse.
+A tool for exposing [Logseq](https://logseq.com) knowhow to agents.  Prefer command line tools to MCP tools because they're ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike. It's easier to wrap a command line tool as an MCP server, than the reverse.
 
 <p align="center">
   <img src="./images/logo.png" style="width: 250px; max-width: 100%;" />
@@ -13,7 +13,7 @@ That also makes it the ideal store for skills.  Tag a page `Skills` and describe
 Getting frontmatter properties:
 
 ```zsh
-$ notes props Coding
+$ nt props Coding
 ```
 
 ```md
@@ -38,32 +38,32 @@ $ about Coding
 
 Sample tools calls:
 
-* `notes pages` - list regular pages
-* `notes pages -t journal` - list journal pages
-* `notes pages -t all` - list both journal and regular pages
-* `notes page Atomic | wikilinks` - to view wikilinks on a page
-* `notes page Atomic | wikilinks | notes page` - list all wikilinked pages
-* `notes page Atomic | links` - to view links on page
-* `notes page Atomic` - list a particular page by name
-* `notes tags Programming` - list notes tagged Programming
-* `notes name programming | notes t` - normalize the name and find pages tagged Programming
-* `notes tags Programming | notes page` - pipe names into page to list content for a bunch of pages
-* `notes page Atomic | grep -C 3 components` - use `grep` as usual
-* `notes path Atomic | xargs code` - open page in VS Code, nvim, etc.
-* `echo "My thoughts" | notes post Atomic` - writing a page
-* `echo "My thoughts" | notes post Atomic --overwrite` - overwriting an existing page
-* `notes path Atomic | xargs git restore` - undoing a mistaken overwrite
-* `echo "Atomic\nClojure Way" | notes tags` - tags on these pages
-* `list Atomic "Clojure Way" | notes page` -- display several pages
-* `list Coding Tasking Decomposing | notes prereq | seen | notes page` - several concepts and their unique prerequisites
-* `day | notes page` - today's journal page
-* `day -1 | notes page` - yesterday's journal page
-* `day $(seq 0 -90) | notes page` - to review 90 days of journal entries
-* `day $(seq 0 -30) | notes page | links` - links from latest journal entries
-* `day $(seq 0 -30) | notes page --only "~tasks"` - to display only TODOs
-* `day $(seq 0 -30) | notes page --less "~tasks"` - to display everything but TODOs
-* `day $(seq 0 -30) | notes page` - a range of journal entries (`zsh`)
-* `day (0..-30) | notes page` - a range of journal entries (`pwsh`)
+* `nt pages` - list regular pages
+* `nt pages -t journal` - list journal pages
+* `nt pages -t all` - list both journal and regular pages
+* `nt page Atomic | nt wikilinks` - to view wikilinks on a page
+* `nt page Atomic | nt wikilinks | nt page` - list all wikilinked pages
+* `nt page Atomic | nt links` - to view links on page
+* `nt page Atomic` - list a particular page by name
+* `nt tags Programming` - list notes tagged Programming
+* `nt name programming | nt t` - normalize the name and find pages tagged Programming
+* `nt tags Programming | nt page` - pipe names into page to list content for a bunch of pages
+* `nt page Atomic | grep -C 3 components` - use `grep` as usual
+* `nt path Atomic | xargs code` - open page in VS Code, nvim, etc.
+* `echo "My thoughts" | nt post Atomic` - writing a page
+* `echo "My thoughts" | nt post Atomic --overwrite` - overwriting an existing page
+* `nt path Atomic | xargs git restore` - undoing a mistaken overwrite
+* `echo "Atomic\nClojure Way" | nt tags` - tags on these pages
+* `nt list Atomic "Clojure Way" | nt page` -- display several pages
+* `nt list Coding Tasking Decomposing | nt prereq | nt seen | nt page` - several concepts and their unique prerequisites
+* `nt day | nt page` - today's journal page
+* `nt day -1 | nt page` - yesterday's journal page
+* `nt day $(seq 0 -90) | nt page` - to review 90 days of journal entries
+* `nt day $(seq 0 -30) | nt page | nt links` - links from latest journal entries
+* `nt day $(seq 0 -30) | nt page --only "~tasks"` - to display only TODOs
+* `nt day $(seq 0 -30) | nt page --less "~tasks"` - to display everything but TODOs
+* `nt day $(seq 0 -30) | nt page` - a range of journal entries (`zsh`)
+* `nt day (0..-30) | nt page` - a range of journal entries (`pwsh`)
 
 These can be issued directly in [OpenCode](https://opencode.ai) — by you or the agent.  Being command line, these can be used by any agentic runtime (Claude, Gemini, etc.) with [computer use](https://www.anthropic.com/news/3-5-models-and-computer-use).
 
@@ -103,7 +103,7 @@ about "Agent Instructions" | docmode --para | cat -s
 Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) spine.  With Datalog queries in easy reach, there's no limit to the queries and custom commands you can build.  The innards build on this.  It's one reason to prefer Logseq to Obsidian.
 
 ```zsh
-$ notes q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
+$ nt q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
 ```
 
 ### `about` Design Rationale
@@ -112,40 +112,40 @@ The `about` tool filters out blocks which are themselves either links or TODOs. 
 
 ### Ergonomics
 
-The kit was designed to minimize ceremony, to compose, and to mind the Unix philosophy.  The `notes` commands, for example, can receive the primary operand directly or via stdin.  With embedded spaces being an routine concern, it's modeled below.
+The kit was designed to minimize ceremony, to compose, and to mind the Unix philosophy.  The `nt` commands, for example, can receive the primary operand directly or via stdin.  With embedded spaces being an routine concern, it's modeled below.
 
 #### Show pages having certain tags
 
 Equivalents:
 ```zsh
-list Atomic Clojure\ Way | notes tags
+nt list Atomic Clojure\ Way | nt tags
 ```
 ```zsh
-notes tags Atomic
-notes tags Clojure\ Way
+nt tags Atomic
+nt tags Clojure\ Way
 ```
 ```zsh
-printf "%s\n" Atomic Clojure\ Way | xargs -I {} notes tags {}
+printf "%s\n" Atomic Clojure\ Way | xargs -I {} nt tags {}
 ```
 ```pwsh
-'Atomic', 'Clojure Way' | % { notes tags $_ } # powershell
+'Atomic', 'Clojure Way' | % { nt tags $_ } # powershell
 ```
 
 #### Show tags on certain pages
 
 Equivalents:
 ```zsh
-list Atomic "Clojure Way" | notes props tags
+nt list Atomic "Clojure Way" | nt props tags
 ```
 ```zsh
-notes props Atomic tags
-notes props "Clojure Way" tags
+nt props Atomic tags
+nt props "Clojure Way" tags
 ```
 ```zsh
-printf "%s\n" Atomic "Clojure Way" | xargs -I {} notes props {} tags
+printf "%s\n" Atomic "Clojure Way" | xargs -I {} nt props {} tags
 ```
 ```pwsh
-'Atomic', 'Clojure Way' | % { notes props $_ tags } # powershell
+'Atomic', 'Clojure Way' | % { nt props $_ tags } # powershell
 ```
 
 ### OpenCode Custom Tools
