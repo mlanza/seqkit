@@ -729,11 +729,13 @@ function tskGetAllPages(type){
   }).map(results => results.map(page => page?.originalName));
 }
 
+const PIPED = `🚚`;
+
 const program = new Command()
   .name('nt')
   .description(`Retrieve and/or append to pages and journals.
 
- 🚚 = pipeline only operations
+ ${PIPED} = pipeline only operations
 `.trim())
   .version('0.7.0')
   .stopEarly();
@@ -919,32 +921,32 @@ program
 program
   .command('seen')
   .description('Filters down to seen items')
-  .arguments("🚚");
+  .arguments(PIPED);
 
 program
   .command('docmode')
   .description('Represent content as documentation')
-  .arguments("🚚");
+  .arguments(PIPED);
 
 program
   .command('exists')
   .description('Filters paths for existing files')
-  .arguments("🚚");
+  .arguments(PIPED);
 
 program
   .command('links')
   .description('Extracts links')
-  .arguments("🚚");
+  .arguments(PIPED);
 
 program
   .command('wikilinks')
   .description('Extracts wikilinks')
-  .arguments("🚚");
+  .arguments(PIPED);
 
 program
   .command('wikify')
   .description('Convert markdown headers to wiki format')
-  .arguments("🚚");
+  .arguments(PIPED);
 
 if (import.meta.main) {
   if (Deno.args.length === 0) {
