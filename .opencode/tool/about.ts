@@ -12,7 +12,7 @@ export default tool({
   },
   async execute(args) {
     return new Promise((resolve) => {
-      const child = spawn("about", [args.topic], {
+      const child = spawn("nt", ["about", args.topic], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
 

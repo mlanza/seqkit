@@ -7,7 +7,7 @@ export default tool({
   args: {},
   async execute(args) {
     return new Promise((resolve) => {
-      const child = spawn("skills", [], {
+      const child = spawn("nt", ["skills"], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
 
