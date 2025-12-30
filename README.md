@@ -80,7 +80,7 @@ export PATH=~/Documents/nt/bin:$PATH
 
 Set these environment variables:
 
-* **NOTES_DIR** - the path to your notes repo, e.g. `~/Documents/notes`
+* **NOTES_DIR** - the path to your Logseq notes repo, e.g. `~/Documents/notes`
 * **NOTES_ENDPOINT** - the HTTP API endpoint, e.g. http://127.0.0.1:12315/api
 * **NOTES_TOKEN** - a token you configured for the HTTP API
 
