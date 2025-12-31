@@ -163,6 +163,29 @@ function tskGetJournalPage(datestamp){
 
 const getJournalPage = comp(promise, tskGetJournalPage);
 
+function escapeFileName(filePath) {
+  const pathParts = filePath.split('/');
+  const fileName = pathParts[pathParts.length - 1];
+  const lastDotIndex = fileName.lastIndexOf('.');
+
+  if (lastDotIndex <= 0) {
+    return filePath; // No extension or starts with dot
+  }
+
+  const name = fileName.slice(0, lastDotIndex);
+  const ext = fileName.slice(lastDotIndex);
+
+  // Replace dots with %2F (hierarchy separators)
+  // Keep legitimate periods like abbreviations (v.) intact for now
+  let escapedName = name.replace(/\./g, '%2F');
+
+  // Fix common legitimate abbreviations
+  escapedName = escapedName.replace(/v%2F/g, 'v%2E');
+  escapedName = escapedName.replace(/e%2Fg%2E/g, 'e.g.'); // common abbreviation
+
+  return pathParts.slice(0, -1).join('/') + '/' + escapedName + ext;
+}
+
 async function getNames(given){
   if (!given) return null;
   const m = given.match(/(\d{4})-?(\d{2})-?(\d{2})(?!\d)/)
@@ -170,7 +193,7 @@ async function getNames(given){
   const alias = normalized ? await aka(normalized) : null;
   const name = alias || normalized || given; // fallback to given if normalized is null
   const day = m ? parseInt(m[1] + m[2] + m[3]) : await journalDay(name);
-  const path = name ? getFilePath(day, name) : null;
+  const path = name ? escapeFileName(getFilePath(day, name)) : null;
   const names = {given, day, normalized, name, path};
   //console.log({names});
   return names;
