@@ -92,10 +92,10 @@ Once done, start Logseq, start your shell and issue a few commands.
 
 While technically possible to give the agent a minimal `AGENTS.md` and ask it to lookup the most crucial instructions outright, that's just slow.  Although the content will be redundant (in Logseq and in your filesystem), it's more expedient to bootstrap your agent from a file written to your project or to the designated place used by your preferred agentic runtime.
 
-The following assumes the target page `prerequisites` is replete with your most critical items.  The `docmode` tool slightly flattens Logseq's outline formatting.
+The following assumes the target page `prerequisites` is replete with your most critical items.  The `document` tool slightly flattens Logseq's outline formatting.
 
 ```zsh
-nt about "Agent Instructions" | nt docmode --para | cat -s
+nt about "Agent Instructions" | nt document --para | cat -s
 ```
 
 ### `about` Design Rationale

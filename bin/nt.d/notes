@@ -956,7 +956,7 @@ program
   .arguments(PIPED);
 
 program
-  .command('docmode')
+  .command('document')
   .description('Represent content as documentation')
   .arguments(PIPED);
 
