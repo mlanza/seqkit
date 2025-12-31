@@ -2,6 +2,7 @@
   "version": "5",
   "redirects": {
     "https://deno.land/std/streams/text_line_stream.ts": "https://deno.land/std@0.224.0/streams/text_line_stream.ts",
+    "https://deno.land/x/dotenv/load.ts": "https://deno.land/x/dotenv@v3.2.2/load.ts",
     "https://esm.sh/data.task": "https://esm.sh/data.task@3.1.2"
   },
   "remote": {
@@ -73,6 +74,9 @@
     "https://deno.land/x/cliffy@v1.0.0-rc.4/table/deps.ts": "cbb896e8d7a6b5e3c2b9dda7d16638c202d9b46eb738c2dae1fa9480d8091486",
     "https://deno.land/x/cliffy@v1.0.0-rc.4/table/row.ts": "79eb1468aafdd951e5963898cdafe0752d4ab4c519d5f847f3d8ecb8fe857d4f",
     "https://deno.land/x/cliffy@v1.0.0-rc.4/table/table.ts": "298671e72e61f1ab18b42ae36643181993f79e29b39dc411fdc6ffd53aa04684",
+    "https://deno.land/x/dotenv@v3.2.2/load.ts": "cbd76a0aee01aad8d09222afaa1dd04b84d9d3e44637503b01bf77a91df9e041",
+    "https://deno.land/x/dotenv@v3.2.2/mod.ts": "077b48773de9205266a0b44c3c3a3c3083449ed64bb0b6cc461b95720678d38e",
+    "https://deno.land/x/dotenv@v3.2.2/util.ts": "693730877b13f8ead2b79b2aa31e2a0652862f7dc0c5f6d2f313f4d39c7b7670",
     "https://esm.sh/data.task@3.1.2": "8405ac12ee787d663dddb7c0fc0edea970aea508d9fd05d3d257b2683b6db3a8",
     "https://esm.sh/data.task@3.1.2/denonext/data.task.mjs": "d4d2e6f2d3f01c824e738c742e015fd7ea3ae63d4d4c6aa29d05fae6aa95d127"
   },

@@ -1,34 +1,51 @@
-#!/usr/bin/env deno run --allow-run
-const [sub, ...rest] = Deno.args
+#!/usr/bin/env deno run --allow-run --allow-read --allow-env
+import "https://deno.land/x/dotenv/load.ts";
 
-const subcmd = sub || "notes";
+const [sub, ...rest] = Deno.args;
+let subcmd = sub || "notes"; // Default to "notes"
+let finalArgs = rest;
 
-let exe = `${import.meta.dirname}/nt.d/${subcmd}`
+const psPath = `${import.meta.dirname}/nt.d/${subcmd}.ps1`;
+const jsPath = `${import.meta.dirname}/nt.d/${subcmd}.js`;
 
-const cmd = new Deno.Command(exe, {
-  args: rest,
+let command;
+let commandArgs;
+
+let psExists = false;
+try {
+  await Deno.stat(psPath);
+  psExists = true;
+} catch (e) { if (!(e instanceof Deno.errors.NotFound)) throw e; }
+
+let jsExists = false;
+if (!psExists) { // Only check for JS if no PS script found
+  try {
+    await Deno.stat(jsPath);
+    jsExists = true;
+  } catch (e) { if (!(e instanceof Deno.errors.NotFound)) throw e; }
+}
+
+if (psExists) {
+  command = "pwsh";
+  commandArgs = ["-NoProfile", "-File", psPath, ...finalArgs];
+} else if (jsExists) {
+  command = "deno";
+  commandArgs = ["run", "--allow-all", jsPath, ...finalArgs];
+} else {
+  // Fallback to notes.js if no matching script found
+  const fallbackNotesPath = `${import.meta.dirname}/nt.d/notes.js`;
+  command = "deno";
+  // Pass the original subcmd as an argument to notes.js for catch-all behavior
+  commandArgs = ["run", "--allow-all", fallbackNotesPath, sub, ...rest];
+}
+
+const cmd = new Deno.Command(command, {
+  args: commandArgs,
   stdin: "inherit",
   stdout: "inherit",
   stderr: "inherit"
-})
+});
 
-try {
-  const child = cmd.spawn()
-  const status = await child.status
-  Deno.exit(status.code)
-} catch (err) {
-  if (err instanceof Deno.errors.NotFound) {
-    // Delegate to notes as catchall
-    exe = `${import.meta.dirname}/nt.d/notes`
-    const notesCmd = new Deno.Command(exe, {
-      args: [sub, ...rest],
-      stdin: "inherit",
-      stdout: "inherit",
-      stderr: "inherit"
-    })
-    const notesChild = notesCmd.spawn()
-    const notesStatus = await notesChild.status
-    Deno.exit(notesStatus.code)
-  }
-  throw err
-}
+const child = cmd.spawn();
+const status = await child.status;
+Deno.exit(status.code);
