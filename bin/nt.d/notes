@@ -789,7 +789,7 @@ const PIPED = `🚚`;
 
 const program = new Command()
   .name('nt')
-  .description(`Retrieve and/or append to pages and journals.
+  .description(`A general-purpose tool for interacting with Logseq content.
 
  ${PIPED} = pipeline only operations
 `.trim())
