@@ -105,7 +105,11 @@ function fmt(options){
 }
 
 function toInt(s) {
-  return typeof s === 'string' && /^-?\d+$/.test(s) ? Number(s) : null
+  try {
+    return typeof s === 'string' && /^-?\d+$/.test(s) ? Number(s) : null
+  } catch {
+    return null;
+  }
 }
 
 function tskNormalizedName(name){
