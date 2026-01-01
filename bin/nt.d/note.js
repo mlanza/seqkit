@@ -691,9 +691,14 @@ async function append(options, given){
   }
 }
 
-async function overwrite(options, given) {
+async function write(options, given) {
   try {
     const {name, path} = await identify(given);
+    const found = await exists(path);
+
+    if (!found && options.exists) {
+      throw new Error(`Page "${name}" does not exist.`);
+    }
 
     const hasStdin = !Deno.isatty(Deno.stdin.rid);
     if (!hasStdin) {
@@ -887,10 +892,11 @@ program
   .action(append);
 
 program
-  .command('overwrite')
-  .description("Overwrite page from stdin preserving properties")
+  .command('write')
+  .description("Write page from stdin preserving properties")
   .arguments("<name>")
-  .action(overwrite);
+  .option('--exists', "Only if it exists")
+  .action(write);
 
 program
   .command('tags')
