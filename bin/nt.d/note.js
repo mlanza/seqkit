@@ -213,12 +213,12 @@ function tskLogseq(method, args){
       })
 
       if (!response.ok) {
-        reject(new Error(`HTTP ${response.status}: ${response.statusText}`));
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json()
       if (result && result.error) {
-        reject(new Error(result.error));
+        throw new Error(result.error);
       }
 
       resolve(result);
