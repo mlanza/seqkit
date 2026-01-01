@@ -691,22 +691,45 @@ async function append(options, given){
   }
 }
 
+async function overwrite(options, given) {
+  try {
+    const {name, path} = await identify(given);
+
+    const hasStdin = !Deno.isatty(Deno.stdin.rid);
+    if (!hasStdin) {
+      throw new Error('Must supply content via stdin.');
+    }
+
+    const deletedCount = await deleteAllBlocks(name);
+    const content = await Deno.readTextFile('/dev/stdin');
+    const lines = content.trim().split("\n");
+
+    for(const line of lines) {
+      await callLogseq('logseq.Editor.appendBlockInPage', [name, line.trim()]);
+    }
+
+    console.log(`Overwrote ${lines.length} blocks to: ${path}`);
+  } catch (error) {
+    abort(error);
+  }
+}
+
 async function deleteAllBlocks(pageName) {
   const blocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
-  
+
   if (!blocks || blocks.length === 0) {
     return 0;
   }
 
   let deletedCount = 0;
-  
+
   async function deleteBlockRecursively(block) {
     if (block.children && block.children.length > 0) {
       for (const child of block.children) {
         await deleteBlockRecursively(child);
       }
     }
-    
+
     await callLogseq('logseq.Editor.removeBlock', [block.uuid]);
     deletedCount++;
   }
@@ -864,6 +887,12 @@ program
   .action(append);
 
 program
+  .command('overwrite')
+  .description("Overwrite page from stdin preserving properties")
+  .arguments("<name>")
+  .action(overwrite);
+
+program
   .command('tags')
   .alias('t')
   .description('List pages with given tags (default: ALL tags)')
@@ -950,33 +979,6 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
   .action(pipeable(query));
-
-program
-  .command('overwrite')
-  .description("Overwrite page blocks from stdin (preserve properties)")
-  .arguments("<name>")
-  .action(async function(options, given) {
-    try {
-      const {name, path} = await identify(given);
-      
-      const hasStdin = !Deno.isatty(Deno.stdin.rid);
-      if (!hasStdin) {
-        throw new Error('Must supply content via stdin.');
-      }
-
-      const deletedCount = await deleteAllBlocks(name);
-      const content = await Deno.readTextFile('/dev/stdin');
-      const lines = content.trim().split("\n");
-      
-      for(const line of lines) {
-        await callLogseq('logseq.Editor.appendBlockInPage', [name, line.trim()]);
-      }
-
-      console.log(`Overwrote ${lines.length} blocks to: ${path}`);
-    } catch (error) {
-      abort(error);
-    }
-  });
 
 // External command stubs for help visibility
 program
