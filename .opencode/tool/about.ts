@@ -6,13 +6,13 @@ export default tool({
   description: "Lookup informative and instructive content about topics",
 
   args: {
-    topic: tool.schema
-      .string()
-      .describe("Topic to fetch")
+    topics: tool.schema
+      .array(tool.schema.string())
+      .describe("Topics to fetch")
   },
   async execute(args) {
     return new Promise((resolve) => {
-      const child = spawn("nt", ["about", args.topic], {
+      const child = spawn("nt", ["about", ...args.topics], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
 
@@ -30,14 +30,14 @@ export default tool({
       child.on("close", (code) => {
         if (stderr) {
           resolve(JSON.stringify({
-            topic: args.topic,
+            topics: args.topics,
             success: false,
             error: stderr.trim(),
             output: stdout.trim()
           }));
         } else {
           resolve(JSON.stringify({
-            topic: args.topic,
+            topics: args.topics,
             success: true,
             output: stdout.trim()
           }));
@@ -46,7 +46,7 @@ export default tool({
 
       child.on("error", (error) => {
         resolve(JSON.stringify({
-          topic: args.topic,
+          topics: args.topics,
           success: false,
           error: error.message,
           exitCode: error.code
