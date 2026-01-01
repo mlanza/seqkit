@@ -9,7 +9,7 @@ param(
 $structure = $Input | nt struct | ConvertFrom-Json
 
 # Function to fix content by trimming each line
-function Fix-Content {
+function Unindent-Content {
     param($content)
 
     $lines = $content -split "`n"
@@ -31,7 +31,7 @@ function Render-Node {
     param($node, $level = 0, $isLastChild = $false)
 
     # Remove one level of indentation/bullet only from level 0 content
-    $content = Fix-Content -content $node.content
+    $content = Unindent-Content -content $node.content
 
     Write-Output $content
 
