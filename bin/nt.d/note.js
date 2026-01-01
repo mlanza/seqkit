@@ -398,11 +398,11 @@ function page(options){
   const nest = options.nest || false;
   const keep = keeping(options.less, false) || keeping(options.only, true);
 
-  return async function(named){
+  return async function(given){
     try {
-      const {name, path, normalized} = await getNames(named);
+      const {name, path, normalized} = await getNames(given);
       if (!normalized) {
-        throw new Error(`Page not found: ${named}`);
+        throw new Error(`Page not found: ${given}`);
       }
 
       const found = await exists(path);
@@ -657,9 +657,9 @@ async function post(options, name) {
   }
 }
 
-async function append(options, named){
+async function append(options, given){
   try {
-    if (!named) {
+    if (!given) {
       throw new Error('Name argument is required');
     }
 
@@ -667,7 +667,7 @@ async function append(options, named){
       throw new Error('LOGSEQ_REPO environment variable is not set');
     }
 
-    const {name, path} = await getNames(named);
+    const {name, path} = await getNames(given);
     const found = await exists(path);
 
     if (!found) {
