@@ -681,30 +681,29 @@ async function prepend(options, given){
       throw new Error('Must supply content via stdin.');
     }
 
-    // Get orientation - find first existing block for prepend positioning
-    let firstBlockUuid = null;
-    const firstBlock = await callLogseq('logseq.Editor.getPageBlocksTree', [name]);
-    if (firstBlock && firstBlock.length > 0) {
-      firstBlockUuid = firstBlock[0].uuid;
+    // For prepend, always add to very beginning of page
+    let prependToBeginning = false;
+    const blocks = await callLogseq('logseq.Editor.getPageBlocksTree', [name]);
+    if (blocks && blocks.length > 0) {
+      prependToBeginning = true;
     }
 
     // Use SAX Builder with orientation information
     const builder = new SAXLogseqBuilder(name, callLogseq, !found);
     
-    // If we have a first block, we need to modify SAX Builder to prepend before it
-    if (firstBlockUuid) {
+    // If we need to prepend, always insert at beginning
+    if (prependToBeginning) {
       // Override the createBlock method for prepend mode
       const originalCreateBlock = builder.createBlock.bind(builder);
       let firstTopLevelBlock = true;
       
       builder.createBlock = async function(content, parentUuid) {
         if (!parentUuid && firstTopLevelBlock) {
-          // First top-level block: insert before existing content
+          // First top-level block: append to page (goes to beginning automatically)
           firstTopLevelBlock = false;
-          const result = await builder.logseqApi('logseq.Editor.insertBlock', [
-            firstBlockUuid,
-            content,
-            {before: true}
+          const result = await builder.logseqApi('logseq.Editor.appendBlockInPage', [
+            builder.pageName,
+            content
           ]);
           return result.uuid || result;
         } else {
