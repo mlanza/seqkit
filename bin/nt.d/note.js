@@ -640,10 +640,12 @@ function query(options){
   }
 }
 
+
+
 async function append(options, given){
   try {
     const {name, path} = await identify(given);
-    const found = await exists(path);
+    let found = await exists(path);
 
     if (!found && options.exists) {
       throw new Error(`Page "${name}" does not exist.`);
@@ -934,6 +936,7 @@ program
   .description("Append to page from stdin")
   .arguments("<name>")
   .option('--exists', "Only if it exists")
+  .option('--debug', "Enable debug output to stderr")
   .action(append);
 
 program
@@ -1126,39 +1129,7 @@ class SAXLogseqBuilder {
   }
 }
 
-async function saxWrite(options, given) {
-  try {
-    const {name, path} = await identify(given);
-    const found = await exists(path);
 
-    if (!found && options.exists) {
-      throw new Error(`Page "${name}" does not exist.`);
-    }
-
-    const hasStdin = !Deno.isatty(Deno.stdin.rid);
-    if (!hasStdin) {
-      throw new Error('Must supply content via stdin.');
-    }
-
-    const builder = new SAXLogseqBuilder(name, callLogseq);
-    if (options.debug) {
-      builder.debug = true;
-    }
-    
-    await builder.processStream();
-    console.log(`Streamed content to: ${path}`);
-  } catch (error) {
-    abort(error);
-  }
-}
-
-program
-  .command('saxWrite')
-  .description("Write structured markdown to page using SAX-style streaming")
-  .arguments("<name>")
-  .option('--exists', "Only if it exists")
-  .option('--debug', "Enable debug output to stderr")
-  .action(saxWrite);
 
 
 

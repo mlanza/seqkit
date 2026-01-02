@@ -1,4 +1,4 @@
-# saxWrite - SAX-Style Structured Markdown to Logseq
+# SAXLogseqBuilder - SAX-Style Structured Markdown to Logseq
 
 ## Objectives
 
@@ -101,6 +101,7 @@ The decision is clear: **SAX-style processing is superior for Logseq streaming**
 ### Core Components
 
 #### 1. SAXLogseqBuilder Class
+Internal component that handles SAX-style parsing of structured markdown:
 ```javascript
 class SAXLogseqBuilder {
   constructor(pageName, logseqApi) {
@@ -133,11 +134,11 @@ class SAXLogseqBuilder {
 
 ### Command Structure
 ```bash
-nt saxWrite <pageName> [--exists] [--debug]
+nt append <pageName> [--exists] [--debug]
 ```
 
-- **Input**: Structured markdown via stdin
-- **Output**: Real-time Logseq block creation
+- **Input**: Structured or plain markdown via stdin
+- **Output**: Real-time Logseq block creation with hierarchy preservation
 - **Options**: Page existence check, debug output
 
 ## Positive Experiences & Successes
@@ -189,13 +190,19 @@ nt saxWrite <pageName> [--exists] [--debug]
 **Solution**: Use `blockStack[indent - 1]` for consistent parent resolution
 **Learning**: Maintain explicit stack mapping for reliable hierarchy tracking
 
-### ❌ Logseq API Quirks
+### ✅ Logseq API Quirks Solved
 
 #### 1. Empty Block Creation
 **Issue**: New pages get an empty placeholder block before first content
-**Observation**: Both `append` and `saxWrite` create empty `content: ""` block
-**Impact**: Not a bug in our code, but Logseq's default behavior
-**Workaround**: Accept as Logseq limitation, not fixable in SAX parser
+**Observation**: Both `append` and original `saxWrite` created empty `content: ""` block
+**Solution**: Post-processing cleanup removes empty block after page creation
+**Implementation**: 
+- Detect new page creation (`!found`)
+- After streaming completes, remove first empty block
+- Only applies to new pages, not existing ones
+**Code**: `cleanupEmptyBlock()` function with error handling
+**Integration**: Added to both `append` and original `saxWrite` commands
+**Result**: Clean pages without leading empty blocks for all content operations
 
 #### 2. Block Immutability
 **Issue**: Cannot edit block content in place
@@ -252,6 +259,25 @@ cursor = {
 - **Partial Success**: Content processed before error persists
 - **User Experience**: Real-time feedback vs batch processing
 
+## Current Implementation Status
+
+### ✅ Enhanced `append` Command
+
+#### Current Implementation
+- **Enhanced**: Now uses internal SAXLogseqBuilder for structured content processing
+- **Backward Compatible**: Maintains same API and behavior as before
+- **New Capability**: Handles hierarchical structure, properties, hanging content
+- **Cleanup**: Includes empty block removal for new pages
+- **Options**: `--exists`, `--debug` (new)
+
+### ✅ Code Consolidation Benefits
+
+1. **Single Source of Truth**: All Logseq operations use shared SAXLogseqBuilder component
+2. **No Duplication**: Eliminated redundant implementations
+3. **Consistent Behavior**: All content commands handle structure uniformly
+4. **Maintenance**: Single place to fix bugs, add features
+5. **Cleanup Logic**: Empty block handling integrated for all content operations
+
 ## Future Development Opportunities
 
 ### 1. Advanced Content Types
@@ -283,8 +309,8 @@ cursor = {
 4. **CLI Structure**: Follow Cliffy command patterns for consistency
 
 ### Testing Strategy
-1. **Unit Tests**: Test cursor state management independently
-2. **Integration Tests**: Test with real Logseq instances
+1. **Unit Tests**: Test SAXLogseqBuilder cursor state management independently
+2. **Integration Tests**: Test enhanced `append` with real Logseq instances
 3. **Edge Cases**: Empty input, malformed hierarchy, API failures
 4. **Performance Tests**: Large documents, memory usage validation
 
@@ -297,6 +323,6 @@ The SAX-style streaming approach successfully demonstrates superior characterist
 - **Error Resilience**: Partial success vs all-or-nothing
 - **Unix Integration**: Natural pipeline compatibility
 
-The implementation validates the hypothesis that **SAX-style parsing is architecturally superior** for streaming structured content into Logseq's block-based data model. The key insight is that Logseq's immutable block model aligns perfectly with SAX's event-driven, line-by-line processing approach.
+The enhanced `append` command implementation validates the hypothesis that **SAX-style parsing is architecturally superior** for streaming structured content into Logseq's block-based data model. The key insight is that Logseq's immutable block model aligns perfectly with SAX's event-driven, line-by-line processing approach.
 
-This work provides a solid foundation for future enhancements and demonstrates the power of leveraging existing infrastructure rather than duplicating functionality.
+This work provides a solid foundation for future enhancements and demonstrates the power of consolidating functionality into reusable components rather than duplicating implementations.
