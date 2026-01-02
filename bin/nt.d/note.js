@@ -935,6 +935,178 @@ program
   .option('--exists', "Only if it exists")
   .action(prepend);
 
+class SAXLogseqBuilder {
+  constructor(pageName, logseqApi) {
+    this.pageName = pageName;
+    this.logseqApi = logseqApi;
+    this.cursor = {
+      currentIndent: 0,
+      parentUuid: null,
+      currentUuid: null,
+      blockStack: []  // Maps indent levels to block UUIDs
+    };
+    this.debug = false;
+  }
+
+  async processStream() {
+    const linesStream = Deno.stdin.readable
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(new TextLineStream());
+
+    for await (const line of linesStream) {
+      if (this.debug) console.error(`Processing: ${JSON.stringify(line)}`);
+      await this.processLine(line);
+    }
+  }
+
+  async processLine(line) {
+    if (!line || line.trim() === '') {
+      return; // Skip empty lines
+    }
+
+    const content = line.replace(/\t/g, '  '); // Normalize tabs to spaces
+    const indent = this.countLeadingSpaces(content);
+    const trimmed = content.trim();
+    
+    const isBlock = trimmed.startsWith('- ');
+    const isProperty = trimmed.includes('::') && !trimmed.startsWith('- ');
+    
+    if (this.debug) {
+      console.error(`Line analysis: indent=${indent}, isBlock=${isBlock}, isProperty=${isProperty}, content="${trimmed}"`);
+    }
+
+    if (isBlock) {
+      await this.handleBlock(trimmed, indent);
+    } else if (isProperty) {
+      await this.handleProperty(trimmed, indent);
+    } else {
+      await this.handleContent(trimmed, indent);
+    }
+  }
+
+  async handleBlock(line, indent) {
+    const content = line.replace(/^\s*-\s*/, '');
+    
+    // Adjust cursor to correct parent level
+    this.adjustCursor(indent);
+    
+    if (this.debug) {
+      console.error(`Creating block: content="${content}", parent=${this.cursor.parentUuid}`);
+    }
+
+    // Create block via API
+    const blockUuid = await this.createBlock(content, this.cursor.parentUuid);
+    
+    // Update cursor state
+    this.cursor.currentUuid = blockUuid;
+    this.cursor.currentIndent = indent;
+    this.cursor.blockStack[indent] = blockUuid;
+    this.cursor.parentUuid = this.cursor.blockStack[indent - 1] || null;
+  }
+
+  async handleProperty(line, indent) {
+    // Properties should be child blocks at the same level as the current block
+    if (this.debug) {
+      console.error(`Creating property block: "${line}" at indent ${indent}`);
+    }
+    
+    // For properties, we need to find the correct parent for this indentation level
+    const parentUuid = this.cursor.blockStack[indent - 1] || null;
+    const propertyBlockUuid = await this.createBlock(line, parentUuid);
+    
+    // Update cursor to track this property block
+    this.cursor.currentUuid = propertyBlockUuid;
+    this.cursor.currentIndent = indent;
+    this.cursor.blockStack[indent] = propertyBlockUuid;
+  }
+
+  async handleContent(line, indent) {
+    if (this.debug) {
+      console.error(`Creating content block: "${line}" with parent ${this.cursor.parentUuid}`);
+    }
+    
+    // Hanging content becomes a child block of the current parent
+    const parentUuid = this.cursor.parentUuid || this.cursor.currentUuid;
+    const contentBlockUuid = await this.createBlock(line, parentUuid);
+    
+    // Update cursor to track this content block
+    this.cursor.currentUuid = contentBlockUuid;
+    this.cursor.currentIndent = indent;
+    this.cursor.blockStack[indent] = contentBlockUuid;
+  }
+
+  adjustCursor(newIndent) {
+    if (this.debug) {
+      console.error(`Adjusting cursor: current=${this.cursor.currentIndent} -> new=${newIndent}`);
+    }
+    
+    if (newIndent > this.cursor.currentIndent) {
+      // Going deeper - current block becomes parent
+      this.cursor.parentUuid = this.cursor.currentUuid;
+    } else if (newIndent < this.cursor.currentIndent) {
+      // Going up - find parent at this level
+      this.cursor.parentUuid = this.cursor.blockStack[newIndent - 1] || null;
+    }
+    // Same level - parent stays the same
+  }
+
+  async createBlock(content, parentUuid) {
+    try {
+      const method = parentUuid ? 'logseq.Editor.insertBlock' : 'logseq.Editor.appendBlockInPage';
+      const args = parentUuid 
+        ? [parentUuid, content, {before: false}]
+        : [this.pageName, content];
+      
+      const result = await this.logseqApi(method, args);
+      return result.uuid || result;
+    } catch (error) {
+      console.error(`Error creating block: ${error.message}`);
+      throw error;
+    }
+  }
+
+  countLeadingSpaces(str) {
+    const match = str.match(/^\s*/);
+    return match ? Math.floor(match[0].length / 2) : 0; // Assuming 2 spaces per level
+  }
+}
+
+async function saxWrite(options, given) {
+  try {
+    const {name, path} = await identify(given);
+    const found = await exists(path);
+
+    if (!found && options.exists) {
+      throw new Error(`Page "${name}" does not exist.`);
+    }
+
+    const hasStdin = !Deno.isatty(Deno.stdin.rid);
+    if (!hasStdin) {
+      throw new Error('Must supply content via stdin.');
+    }
+
+    const builder = new SAXLogseqBuilder(name, callLogseq);
+    if (options.debug) {
+      builder.debug = true;
+    }
+    
+    await builder.processStream();
+    console.log(`Streamed content to: ${path}`);
+  } catch (error) {
+    abort(error);
+  }
+}
+
+program
+  .command('saxWrite')
+  .description("Write structured markdown to page using SAX-style streaming")
+  .arguments("<name>")
+  .option('--exists', "Only if it exists")
+  .option('--debug', "Enable debug output to stderr")
+  .action(saxWrite);
+
+
+
 program
   .command('tags')
   .alias('t')
