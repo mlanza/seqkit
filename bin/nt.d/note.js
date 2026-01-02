@@ -983,12 +983,21 @@ class SAXLogseqBuilder {
   }
 
   async handleContent(line, indent) {
-    if (this.debug) {
-      console.error(`Creating content block: "${line}" with parent ${this.cursor.parentUuid}`);
+    // For hanging content (no dash), determine correct parent
+    let parentUuid;
+    if (indent === 0) {
+      // Hanging content at root level becomes child of current block
+      parentUuid = this.cursor.currentUuid;
+    } else {
+      // Indented hanging content uses normal cursor adjustment
+      this.adjustCursor(indent);
+      parentUuid = this.cursor.parentUuid;
     }
     
-    // Hanging content becomes a child block of the current parent
-    const parentUuid = this.cursor.parentUuid || this.cursor.currentUuid;
+    if (this.debug) {
+      console.error(`Creating content block: "${line}" with parent ${parentUuid}`);
+    }
+    
     const contentBlockUuid = await this.createBlock(line, parentUuid);
     
     // Update cursor to track this content block
