@@ -2,6 +2,8 @@
 
 This document details findings from testing Logseq API transactional structured content insertion capabilities. All experiments use environment variables `LOGSEQ_ENDPOINT` and `LOGSEQ_TOKEN` to avoid hardcoding values.
 
+**Critical Update**: Additional experiments revealed precise patterns for true prepend/append operations using `insertBatchBlock`. The page itself cannot be used as a direct insertion target without proper option combinations.
+
 ## Key Learnings
 
 ### Primary Discovery: `insertBatchBlock` is Transactional
@@ -17,14 +19,17 @@ The `logseq.Editor.insertBatchBlock` method is the **key API endpoint** for tran
 ### Workflow Patterns
 
 1. **New Page Creation**: `createPage` → `insertBatchBlock` with page UUID
-2. **Existing Page Append**: `getPageBlocksTree` → get last block UUID → `insertBatchBlock` with `{sibling: true}`
-3. **Insertion Control**: Target specific blocks using their UUID for precise placement
+2. **True Append**: `getPageBlocksTree` → get last block UUID → `insertBatchBlock` with `{sibling: true}`
+3. **True Prepend**: `getPage` → get page UUID → `insertBatchBlock` with `{sibling: false, before: true}`
+4. **Insertion Control**: Target specific blocks using their UUID for precise placement
 
 ### Limitations Discovered
 
 - Page names cannot be used directly with `insertBatchBlock` - requires UUID
 - Cannot batch insert into non-existent pages without first creating the page
 - `appendBlockInPage` treats structured markdown as single block (adds "multipleBlocks" warning)
+- **Page UUID with `{sibling: true}` inserts at TOP, not bottom (acts like prepend)
+- **Page UUID with `{sibling: false}` makes page the parent (creates nested structure)**
 
 ---
 
@@ -236,6 +241,206 @@ PREPENDED content
 
 ---
 
+## Experiment 6: True Append to Page Bottom
+
+```bash
+# Step 1: Get page blocks and find last block
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"logseq.Editor.getPageBlocksTree","args":["TestPageTarget"]}' | jq '.[-1].uuid' -r
+
+# Step 2: Append after last block using sibling:true
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method":"logseq.Editor.insertBatchBlock",
+    "args":[
+      "LAST_BLOCK_UUID",
+      [
+        {"content":"APPENDED_AFTER_LAST_XyZ1"},
+        {"content":"Another appended block"}
+      ],
+      {"sibling":true}
+    ]
+  }'
+```
+
+**Results**: Successfully appended content to the very bottom of the page after all existing content.
+
+**Why it's useful**: **CRITICAL DISCOVERY** - The only reliable way to append to page bottom is using last block UUID with `{sibling: true}`.
+
+**Resulting Logseq Content:**
+```markdown
+[... existing content ...]
+Existing block B
+APPENDED_AFTER_LAST_XyZ1
+Another appended block
+```
+
+---
+
+## Experiment 7: True Prepend to Page Top
+
+```bash
+# Step 1: Get page UUID (not blocks)
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"logseq.Editor.getPage","args":["TestPageTarget"]}'
+
+# Step 2: Prepend using page UUID with specific options
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method":"logseq.Editor.insertBatchBlock",
+    "args":[
+      "PAGE_UUID",
+      [
+        {"content":"TRUE_PREPEND_XyZ2"},
+        {"content":"Another prepended block"}
+      ],
+      {"sibling":false,"before":true}
+    ]
+  }'
+```
+
+**Results**: Successfully prepended content to the very top of the page before all existing content.
+
+**Why it's useful**: **CRITICAL DISCOVERY** - The only reliable way to prepend to page top is using page UUID with `{sibling: false, before: true}`.
+
+**Resulting Logseq Content:**
+```markdown
+TRUE_PREPEND_XyZ2
+Another prepended block
+[... existing content ...]
+```
+
+---
+
+## Experiment 8: Hierarchical True Append
+
+```bash
+# Step 1: Get last block UUID  
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"logseq.Editor.getPageBlocksTree","args":["TestPageTarget"]}' | jq '.[-1].uuid' -r
+
+# Step 2: Append hierarchical content after last block
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method":"logseq.Editor.insertBatchBlock",
+    "args":[
+      "LAST_BLOCK_UUID",
+      [
+        {
+          "content":"HIER_APPEND_ROOT_XyZ3",
+          "children":[
+            {"content":"Nested child 1"},
+            {"content":"Nested child 2","properties":{"status":"test"}}
+          ]
+        }
+      ],
+      {"sibling":true}
+    ]
+  }'
+```
+
+**Results**: Successfully appended complex hierarchical structure to page bottom with properties preserved.
+
+**Why it's useful**: Demonstrates that hierarchical content works perfectly with true append operations.
+
+**Resulting Logseq Content:**
+```markdown
+[... existing content ...]
+HIER_APPEND_ROOT_XyZ3
+  Nested child 1
+  Nested child 2
+  status:: test
+```
+
+---
+
+## Experiment 9: Hierarchical True Prepend
+
+```bash
+# Step 1: Get page UUID
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"logseq.Editor.getPage","args":["TestPageTarget"]}'
+
+# Step 2: Prepend hierarchical content using page UUID
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method":"logseq.Editor.insertBatchBlock",
+    "args":[
+      "PAGE_UUID",
+      [
+        {
+          "content":"HIER_PREPEND_XyZ4",
+          "children":[
+            {"content":"Prepend child 1"},
+            {"content":"Prepend child 2","properties":{"priority":"high"}}
+          ]
+        }
+      ],
+      {"sibling":false,"before":true}
+    ]
+  }'
+```
+
+**Results**: Successfully prepended complex hierarchical structure to page top with properties preserved.
+
+**Why it's useful**: Demonstrates that hierarchical content works perfectly with true prepend operations.
+
+**Resulting Logseq Content:**
+```markdown
+HIER_PREPEND_XyZ4
+  Prepend child 1
+  Prepend child 2
+  priority:: high
+[... existing content ...]
+```
+
+---
+
+## Experiment 10: Page UUID Insertion Behavior
+
+```bash
+# Test page UUID with different option combinations
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method":"logseq.Editor.insertBatchBlock",
+    "args":[
+      "PAGE_UUID",
+      [{"content":"PAGE_UUID_SIBLING_XyZ5"}],
+      {"sibling":true}
+    ]
+  }'
+```
+
+**Results**: Content inserted at top of page (acts like prepend but after other prepended content).
+
+**Why it's useful**: Understanding page UUID behavior - `{sibling: true}` with page UUID inserts at top, not bottom.
+
+**Resulting Logseq Content:**
+```markdown
+PAGE_UUID_SIBLING_XyZ5
+[... other content ...]
+```
+
+---
+
 ## Payload Structure Reference
 
 ### Basic Block Object
@@ -262,6 +467,9 @@ priority:: high
 - `{"sibling": true}` - Insert as sibling after target block
 - `{"sibling": false}` - Insert as child of target block
 - `{"sibling": false, "before": true}` - Insert as child before target's children
+- **Page UUID + `{"sibling": true}`** - Inserts at TOP of page (prepend-like behavior)
+- **Page UUID + `{"sibling": false, before": true}`** - **TRUE PREPEND** - inserts at very top
+- **Last Block UUID + `{"sibling": true}`** - **TRUE APPEND** - inserts at very bottom
 
 ---
 
@@ -273,6 +481,198 @@ priority:: high
 
 ---
 
+## Implementation Strategies
+
+### Strategy 1: True Append to Page Bottom
+
+**When to use**: Add structured content to the end of an existing page.
+
+**Implementation Steps**:
+1. Get all blocks in the page: `getPageBlocksTree`
+2. Extract the UUID of the last block: `.[-1].uuid`
+3. Call `insertBatchBlock` with last block UUID + `{sibling: true}`
+
+**Code Pattern**:
+```bash
+# Step 1: Get last block UUID
+LAST_UUID=$(curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"logseq.Editor.getPageBlocksTree","args":["YourPageName"]}' | \
+  jq '.[-1].uuid' -r)
+
+# Step 2: Append content after last block
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"method\":\"logseq.Editor.insertBatchBlock\",
+    \"args\":[
+      \"$LAST_UUID\",
+      YOUR_STRUCTURED_CONTENT_ARRAY,
+      {\"sibling\":true}
+    ]
+  }"
+```
+
+**Critical Requirements**:
+- Target must be **last block UUID**, not page UUID
+- Use `{sibling: true}` to insert after the target block
+- Works for flat or hierarchical content structures
+
+---
+
+### Strategy 2: True Prepend to Page Top
+
+**When to use**: Add structured content to the beginning of an existing page.
+
+**Implementation Steps**:
+1. Get the page object: `getPage`
+2. Extract the page UUID (not blocks)
+3. Call `insertBatchBlock` with page UUID + `{sibling: false, before: true}`
+
+**Code Pattern**:
+```bash
+# Step 1: Get page UUID
+PAGE_UUID=$(curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"logseq.Editor.getPage","args":["YourPageName"]}' | \
+  jq '.uuid' -r)
+
+# Step 2: Prepend content to top of page
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"method\":\"logseq.Editor.insertBatchBlock\",
+    \"args\":[
+      \"$PAGE_UUID\",
+      YOUR_STRUCTURED_CONTENT_ARRAY,
+      {\"sibling\":false,\"before\":true}
+    ]
+  }"
+```
+
+**Critical Requirements**:
+- Target must be **page UUID**, not block UUID
+- Use `{sibling: false, before: true}` for true prepend
+- Works for flat or hierarchical content structures
+
+---
+
+### Strategy 3: New Page with Initial Content
+
+**When to use**: Create a new page and populate it with structured content.
+
+**Implementation Steps**:
+1. Create the page: `createPage`
+2. Extract page UUID from creation response
+3. Call `insertBatchBlock` with page UUID + `{sibling: false}`
+
+**Code Pattern**:
+```bash
+# Step 1: Create new page
+PAGE_UUID=$(curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"logseq.Editor.createPage","args":["NewPageName",{"journal":false}]}' | \
+  jq '.uuid' -r)
+
+# Step 2: Insert initial content
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"method\":\"logseq.Editor.insertBatchBlock\",
+    \"args\":[
+      \"$PAGE_UUID\",
+      YOUR_STRUCTURED_CONTENT_ARRAY,
+      {\"sibling\":false}
+    ]
+  }"
+```
+
+---
+
+### Strategy 4: Insert at Specific Position
+
+**When to use**: Insert content after a specific existing block.
+
+**Implementation Steps**:
+1. Get page blocks tree: `getPageBlocksTree`
+2. Find the target block by content or position
+3. Call `insertBatchBlock` with target block UUID + `{sibling: true}`
+
+**Code Pattern**:
+```bash
+# Step 1: Find target block (example: find by content)
+TARGET_UUID=$(curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"logseq.Editor.getPageBlocksTree","args":["YourPageName"]}' | \
+  jq '.[] | select(.content == "Your target content") | .uuid' -r)
+
+# Step 2: Insert after target block
+curl -s -X POST $LOGSEQ_ENDPOINT \
+  -H "Authorization: Bearer $LOGSEQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"method\":\"logseq.Editor.insertBatchBlock\",
+    \"args\":[
+      \"$TARGET_UUID\",
+      YOUR_STRUCTURED_CONTENT_ARRAY,
+      {\"sibling\":true}
+    ]
+  }"
+```
+
+---
+
+## Decision Matrix
+
+| Goal | Target UUID | Options | When to Use |
+|------|-------------|---------|-------------|
+| **Append to Bottom** | Last block UUID | `{sibling: true}` | Add content to end of existing page |
+| **Prepend to Top** | Page UUID | `{sibling: false, before: true}` | Add content to beginning of existing page |
+| **New Page Content** | Page UUID | `{sibling: false}` | Create new page with initial content |
+| **Insert After Block** | Target block UUID | `{sibling: true}` | Insert after specific existing content |
+| **Insert Under Block** | Target block UUID | `{sibling: false}` | Insert as child of existing block |
+
+---
+
+## Common Pitfalls to Avoid
+
+### ❌ Wrong Target Selection
+```bash
+# WRONG: Using page UUID for append
+curl -s ... '{"method":"logseq.Editor.insertBatchBlock","args":["PAGE_UUID",content,{"sibling":true}]}'
+# Result: Inserts at TOP, not bottom
+```
+
+### ✅ Correct Target Selection
+```bash
+# CORRECT: Using last block UUID for append
+curl -s ... '{"method":"logseq.Editor.insertBatchBlock","args":["LAST_BLOCK_UUID",content,{"sibling":true}]}'
+# Result: Inserts at BOTTOM as expected
+```
+
+### ❌ Wrong Options for Prepend
+```bash
+# WRONG: Using page UUID without proper options
+curl -s ... '{"method":"logseq.Editor.insertBatchBlock","args":["PAGE_UUID",content,{"sibling":false}]}'
+# Result: Makes page parent (nested structure)
+```
+
+### ✅ Correct Options for Prepend
+```bash
+# CORRECT: Using page UUID with proper prepend options
+curl -s ... '{"method":"logseq.Editor.insertBatchBlock","args":["PAGE_UUID",content,{"sibling":false,"before":true}]}'
+# Result: Inserts at TOP as expected
+```
+
+---
+
 ## Conclusion
 
 The experiments conclusively demonstrate that **single API calls can accomplish complex hierarchical content insertion** using `logseq.Editor.insertBatchBlock`. This approach is superior to sequential block-by-block methods for transactional structured content operations, providing:
@@ -281,5 +681,6 @@ The experiments conclusively demonstrate that **single API calls can accomplish 
 2. **Hierarchy preservation** - nested structures maintained exactly
 3. **Property automation** - metadata handled automatically
 4. **Performance benefits** - single network call vs multiple sequential calls
+5. **Precise insertion control** - true prepend/append workflows discovered
 
-This validates the hypothesis that Logseq's `insertBatchBlock` API provides true transactional structured content insertion capabilities.
+**BREAKTHROUGH**: The critical discovery is that `insertBatchBlock` provides true transactional prepend/append capabilities when using the correct combination of target UUID (page vs last block) and insertion options. This validates the hypothesis that Logseq's `insertBatchBlock` API provides complete transactional structured content insertion capabilities with precise positioning control.
