@@ -642,105 +642,7 @@ function query(options){
 
 
 
-async function append(options, given){
-  try {
-    const {name, path} = await identify(given);
-    let found = await exists(path);
 
-    if (!found && options.exists) {
-      throw new Error(`Page "${name}" does not exist.`);
-    }
-
-    const hasStdin = !Deno.isatty(Deno.stdin.rid);
-    if (!hasStdin) {
-      throw new Error('Must supply content via stdin.');
-    }
-
-    // Use SAX Builder for proper hierarchical content handling
-    const builder = new SAXLogseqBuilder(name, callLogseq, !found);
-    if (options.debug) {
-      builder.debug = true;
-    }
-    await builder.processStream();
-    
-    console.log(`Appended content to: ${path}`);
-  } catch (error) {
-    abort(error);
-  }
-}
-
-
-
-async function addBlockRecursively(pageName, block) {
-  // Add the current block
-  await callLogseq('logseq.Editor.appendBlockInPage', [pageName, block.content]);
-
-  // Recursively add children if they exist
-  if (block.children && block.children.length > 0) {
-    for(const child of block.children) {
-      await addBlockRecursively(pageName, child);
-    }
-  }
-}
-
-async function write(options, given) {
-  try {
-    const {name, path} = await identify(given);
-    const found = await exists(path);
-
-    if (!found && options.exists) {
-      throw new Error(`Page "${name}" does not exist.`);
-    }
-
-    if (found && !options.overwrite) {
-      throw new Error(`Page "${name}" already exists. Use --overwrite to replace it.`);
-    }
-
-    const hasStdin = !Deno.isatty(Deno.stdin.rid);
-    if (!hasStdin) {
-      throw new Error('Must supply content via stdin.');
-    }
-
-    const deletedCount = await deleteAllBlocks(name);
-    const content = await Deno.readTextFile('/dev/stdin');
-    const lines = content.trim().split("\n");
-
-    for(const line of lines) {
-      await callLogseq('logseq.Editor.appendBlockInPage', [name, line.trim()]);
-    }
-
-    console.log(`Wrote ${lines.length} blocks to: ${path}`);
-  } catch (error) {
-    abort(error);
-  }
-}
-
-async function deleteAllBlocks(pageName) {
-  const blocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
-
-  if (!blocks || blocks.length === 0) {
-    return 0;
-  }
-
-  let deletedCount = 0;
-
-  async function deleteBlockRecursively(block) {
-    if (block.children && block.children.length > 0) {
-      for (const child of block.children) {
-        await deleteBlockRecursively(child);
-      }
-    }
-
-    await callLogseq('logseq.Editor.removeBlock', [block.uuid]);
-    deletedCount++;
-  }
-
-  for (const block of blocks) {
-    await deleteBlockRecursively(block);
-  }
-
-  return deletedCount;
-}
 
 function normalizeOptions(options){
   const format = options.json ? 'json' : (options.format || 'md');
@@ -873,221 +775,11 @@ program
   .option('-o, --only <patterns:string>', 'Only content matching regex patterns', { collect: true })
   .action(oldPipeable(page));
 
-program
-  .command('write')
-  .description("Write page from stdin preserving properties")
-  .arguments("<name>")
-  .option('--exists', "Only if it exists")
-  .option('--overwrite', "Overwrite if file already exists")
-  .action(write);
-
-program
-  .command('append')
-  .description("Append to page from stdin")
-  .arguments("<name>")
-  .option('--exists', "Only if it exists")
-  .option('--debug', "Enable debug output to stderr")
-  .action(append);
 
 
 
-class SAXLogseqBuilder {
-  constructor(pageName, logseqApi, isNewPage = false) {
-    this.pageName = pageName;
-    this.logseqApi = logseqApi;
-    this.isNewPage = isNewPage;
-    this.cursor = {
-      currentIndent: 0,
-      parentUuid: null,
-      currentUuid: null,
-      blockStack: []  // Maps indent levels to block UUIDs
-    };
-    this.debug = false;
-  }
 
-  async processStream() {
-    const linesStream = Deno.stdin.readable
-      .pipeThrough(new TextDecoderStream())
-      .pipeThrough(new TextLineStream());
 
-    for await (const line of linesStream) {
-      if (this.debug) console.error(`Processing: ${JSON.stringify(line)}`);
-      await this.processLine(line);
-    }
-
-    // Clean up empty block for new pages
-    if (this.isNewPage) {
-      await this.cleanupEmptyBlock(this.debug);
-    }
-  }
-
-  async processLine(line) {
-    if (!line || line.trim() === '') {
-      return; // Skip empty lines
-    }
-
-    const content = line.replace(/\t/g, '  '); // Normalize tabs to spaces
-    const indent = this.countLeadingSpaces(content);
-    const trimmed = content.trim();
-    
-    const isBlock = trimmed.startsWith('- ');
-    const isProperty = trimmed.includes('::') && !trimmed.startsWith('- ');
-    
-    if (this.debug) {
-      console.error(`Line analysis: indent=${indent}, isBlock=${isBlock}, isProperty=${isProperty}, content="${trimmed}"`);
-    }
-
-    if (isBlock) {
-      await this.handleBlock(trimmed, indent);
-    } else if (isProperty) {
-      await this.handleProperty(trimmed, indent);
-    } else {
-      await this.handleContent(trimmed, indent);
-    }
-  }
-
-  async handleBlock(line, indent) {
-    const content = line.replace(/^\s*-\s*/, '');
-    
-    // Adjust cursor to correct parent level
-    this.adjustCursor(indent);
-    
-    if (this.debug) {
-      console.error(`Creating block: content="${content}", parent=${this.cursor.parentUuid}`);
-    }
-
-    // Create block via API
-    const blockUuid = await this.createBlock(content, this.cursor.parentUuid);
-    
-    // Update cursor state
-    this.cursor.currentUuid = blockUuid;
-    this.cursor.currentIndent = indent;
-    this.cursor.blockStack[indent] = blockUuid;
-    this.cursor.parentUuid = this.cursor.blockStack[indent - 1] || null;
-  }
-
-  async handleProperty(line, indent) {
-    // Properties should be child blocks at the same level as the current block
-    if (this.debug) {
-      console.error(`Creating property block: "${line}" at indent ${indent}`);
-    }
-    
-    // For properties, we need to find the correct parent for this indentation level
-    const parentUuid = this.cursor.blockStack[indent - 1] || null;
-    const propertyBlockUuid = await this.createBlock(line, parentUuid);
-    
-    // Update cursor to track this property block
-    this.cursor.currentUuid = propertyBlockUuid;
-    this.cursor.currentIndent = indent;
-    this.cursor.blockStack[indent] = propertyBlockUuid;
-  }
-
-  async handleContent(line, indent) {
-    // For hanging content (no dash), determine correct parent
-    let parentUuid;
-    if (indent === 0) {
-      // Hanging content at root level becomes child of current block
-      parentUuid = this.cursor.currentUuid;
-    } else {
-      // Indented hanging content uses normal cursor adjustment
-      this.adjustCursor(indent);
-      parentUuid = this.cursor.parentUuid;
-    }
-    
-    if (this.debug) {
-      console.error(`Creating content block: "${line}" with parent ${parentUuid}`);
-    }
-    
-    const contentBlockUuid = await this.createBlock(line, parentUuid);
-    
-    // Update cursor to track this content block
-    this.cursor.currentUuid = contentBlockUuid;
-    this.cursor.currentIndent = indent;
-    this.cursor.blockStack[indent] = contentBlockUuid;
-  }
-
-  adjustCursor(newIndent) {
-    if (this.debug) {
-      console.error(`Adjusting cursor: current=${this.cursor.currentIndent} -> new=${newIndent}`);
-    }
-    
-    if (newIndent > this.cursor.currentIndent) {
-      // Going deeper - current block becomes parent
-      this.cursor.parentUuid = this.cursor.currentUuid;
-    } else if (newIndent < this.cursor.currentIndent) {
-      // Going up - find parent at this level
-      this.cursor.parentUuid = this.cursor.blockStack[newIndent - 1] || null;
-    }
-    // Same level - parent stays the same
-  }
-
-  async createBlock(content, parentUuid) {
-    try {
-      const method = parentUuid ? 'logseq.Editor.insertBlock' : 'logseq.Editor.appendBlockInPage';
-      const args = parentUuid 
-        ? [parentUuid, content, {before: false}]
-        : [this.pageName, content];
-      
-      if (this.debug) {
-        console.error(`Using method: ${method}, args: ${JSON.stringify(args)}`);
-      }
-      
-      const result = await this.logseqApi(method, args);
-      return result.uuid || result;
-    } catch (error) {
-      console.error(`Error creating block: ${error.message}`);
-      throw error;
-    }
-  }
-
-  countLeadingSpaces(str) {
-    const match = str.match(/^\s*/);
-    return match ? Math.floor(match[0].length / 2) : 0; // Assuming 2 spaces per level
-  }
-
-  
-
-  async cleanupEmptyBlock(debug = false) {
-    try {
-      if (debug) {
-        console.error('DEBUG: Cleaning up empty block from new page');
-      }
-      
-      // Get all blocks in the page
-      const blocks = await this.logseqApi('logseq.Editor.getPageBlocksTree', [this.pageName]);
-      
-      if (!blocks || blocks.length === 0) {
-        if (debug) {
-          console.error('DEBUG: No blocks found to clean up');
-        }
-        return;
-      }
-
-      // Find the first (empty) block - it should be one with empty content
-      const firstBlock = blocks.find(block => !block.content || block.content.trim() === '');
-      
-      if (firstBlock) {
-        if (debug) {
-          console.error(`DEBUG: Found empty block to remove: ${firstBlock.uuid}`);
-        }
-        
-        // Remove the empty block
-        await this.logseqApi('logseq.Editor.removeBlock', [firstBlock.uuid]);
-        
-        if (debug) {
-          console.error('DEBUG: Successfully removed empty block');
-        }
-      } else {
-        if (debug) {
-          console.error('DEBUG: No empty block found to remove');
-        }
-      }
-    } catch (error) {
-      console.error('Warning: Failed to clean up empty block:', error.message);
-      // Don't abort - this is cleanup, not core functionality
-    }
-  }
-}
 
 
 
@@ -1227,6 +919,17 @@ program
   .command('wikilinks')
   .description('Extracts wikilinks')
   .arguments(PIPED);
+
+program
+  .command('post')
+  .description('Post content to a page')
+  .arguments("<page_name>")
+  .option('--prepend', 'Prepend content instead of appending')
+  .option('--debug', 'Enable debug output')
+  .option('--overwrite', 'Overwrite existing page content')
+  .action(() => {
+    console.log('Post command placeholder - use external nt post script');
+  });
 
 program
   .command('wikify')
