@@ -55,7 +55,12 @@ class SerialParser {
     
     // ONLY lines starting with "- " create new blocks
     if (trimmed.startsWith('- ')) {
-      const blockIndent = Math.floor((line.length - trimmed.length) / 2);
+      // Calculate indentation level properly - handle both tabs and spaces
+      const leadingWhitespace = line.substring(0, line.length - trimmed.length);
+      const tabCount = (leadingWhitespace.match(/\t/g) || []).length;
+      const spaceCount = leadingWhitespace.length - tabCount;
+      const blockIndent = tabCount + Math.floor(spaceCount / 2);
+      
       const content = trimmed.substring(2).trim();
       return { type: 'block', level: blockIndent, content };
     }
