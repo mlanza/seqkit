@@ -1,8 +1,8 @@
 #!/usr/bin/env pwsh
 
 # Post - Process stdin through serial then pipe to update, or handle properties only
-# Usage: echo "content" | nt post [--prepend] [--debug] [--overwrite] [--prop "key=value"...] <page_name>
-# Usage: nt post [--prop "key=value"...] <page_name>
+# Usage: echo "content" | nt post [--prepend] [--debug] [--overwrite] [--add "key=value"...] <page_name>
+# Usage: nt post [--add "key=value"...] <page_name>
 
 # Check if stdin has content
 $hasStdin = $false
@@ -23,7 +23,7 @@ $otherArgs = @()
 $pageName = $null
 
 for ($i = 0; $i -lt $args.Count; $i++) {
-    if ($args[$i] -eq "--prop" -and $i + 1 -lt $args.Count) {
+    if ($args[$i] -eq "--add" -and $i + 1 -lt $args.Count) {
         $propArgs += $args[$i + 1]
         $i++
     } elseif (-not $pageName) {
