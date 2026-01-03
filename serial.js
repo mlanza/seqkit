@@ -22,7 +22,8 @@ class SerialParser {
       currentBlock: null, // The most recently created block
       currentBlockLevel: -1,
       headerContent: null,
-      headerProperties: {}
+      headerProperties: {},
+      collectingProperties: false
     };
   }
 
@@ -40,16 +41,23 @@ class SerialParser {
       return null; // Don't process this line further
     }
     
+    // Handle case where first block is just properties (no header)
+    if (this.state.headerContent === null && trimmed.includes('::') && !trimmed.startsWith('- ')) {
+      this.state.collectingProperties = true;
+      return { type: 'header-property', level: 0, content: trimmed };
+    }
+    
     // If we're still in the header section (properties after title)
     if (this.state.headerContent !== null && trimmed.includes('::') && !trimmed.startsWith('- ')) {
       return { type: 'header-property', level: 0, content: trimmed };
     }
     
-    // If we encounter a non-property line after header, finalize the header
-    if (this.state.headerContent !== null && !trimmed.includes('::')) {
+    // If we encounter a non-property line after collecting header properties, finalize the header
+    if ((this.state.headerContent !== null || this.state.collectingProperties) && !trimmed.includes('::')) {
       const headerBlock = this.finalizeHeader();
       this.state.rootBlocks.push(headerBlock);
       this.state.headerContent = null;
+      this.state.collectingProperties = false;
       this.state.headerProperties = {};
     }
     
@@ -75,15 +83,23 @@ class SerialParser {
   }
 
   finalizeHeader() {
-    const { properties, cleanContent } = this.extractProperties(this.state.headerContent);
+    let headerContent = this.state.headerContent || '';
+    const { properties, cleanContent } = this.extractProperties(headerContent);
     // Merge with accumulated header properties
     Object.assign(properties, this.state.headerProperties);
     
-    return {
+    const block = {
       content: cleanContent + '\\n',
       properties: this.formatProperties(properties),
       preBlock: true
     };
+    
+    // If no header title, don't include empty content
+    if (!headerContent.startsWith('# ')) {
+      delete block.content;
+    }
+    
+    return block;
   }
 
   extractMarker(content) {
