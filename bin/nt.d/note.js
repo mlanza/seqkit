@@ -320,10 +320,9 @@ function oldPipeable(g){
 // Recursive filtering function for blocks
 function selectBlock(block, keep) {
   const {content, properties} = block;
-  const props = /^[^\s:]+:: .+/;
 
   // Test content with and without marker to catch both cases
-  const kept = props.test(content) || keep(content);
+  const kept = keep(content);
 
   if (!kept) {
     return null;
@@ -390,6 +389,7 @@ function nestedJsonToMarkdown(blocks, level = 0) {
 }
 
 const shorthand = {
+  "~props": "^[^\\s:]+::",
   "~tasks": "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)",
   "~links": '^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+"[^"\\r\\n]*")?\\s*\\))\\s*$'
 }
