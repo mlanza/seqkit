@@ -777,9 +777,9 @@ program
 
 program
   .command('post')
-  .description('Write stdin content to page')
+  .description('Append stdin content to page')
   .arguments("<name>")
-  .option('--prepend', 'Prepend content instead of appending')
+  .option('--prepend', 'Prepend content instead')
   .option('--overwrite', 'Purges any existing page content (not properties)')
   .option('--debug', 'Enable debug output');
 
