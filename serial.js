@@ -23,7 +23,8 @@ class SerialParser {
       currentBlockLevel: -1,
       headerContent: null,
       headerProperties: {},
-      collectingProperties: false
+      collectingProperties: false,
+      pendingProperties: null // Properties to apply to first block
     };
   }
 
@@ -41,10 +42,9 @@ class SerialParser {
       return null; // Don't process this line further
     }
     
-    // Handle case where first block is just properties (no header)
+    // Handle properties before any block - treat as regular properties to be attached to first block
     if (this.state.headerContent === null && trimmed.includes('::') && !trimmed.startsWith('- ')) {
-      this.state.collectingProperties = true;
-      return { type: 'header-property', level: 0, content: trimmed };
+      return { type: 'property', content: trimmed };
     }
     
     // If we're still in the header section (properties after title)
@@ -55,7 +55,9 @@ class SerialParser {
     // If we encounter a non-property line after collecting header properties, finalize the header
     if ((this.state.headerContent !== null || this.state.collectingProperties) && !trimmed.includes('::')) {
       const headerBlock = this.finalizeHeader();
-      this.state.rootBlocks.push(headerBlock);
+      if (headerBlock) {
+        this.state.rootBlocks.push(headerBlock);
+      }
       this.state.headerContent = null;
       this.state.collectingProperties = false;
       this.state.headerProperties = {};
@@ -88,15 +90,19 @@ class SerialParser {
     // Merge with accumulated header properties
     Object.assign(properties, this.state.headerProperties);
     
+    // Only create a block if we have actual header content
+    if (!headerContent.startsWith('# ')) {
+      return null;
+    }
+    
     const block = {
-      content: cleanContent + '\\n',
       properties: this.formatProperties(properties),
       preBlock: true
     };
     
-    // If no header title, don't include empty content
-    if (!headerContent.startsWith('# ')) {
-      delete block.content;
+    // Only include content if we have actual content after cleaning
+    if (cleanContent && cleanContent.trim()) {
+      block.content = cleanContent + '\n';
     }
     
     return block;
@@ -154,6 +160,12 @@ class SerialParser {
     let finalContent = markerContent || content;
     const allProperties = {};
     
+    // Apply any pending properties to the first block
+    if (this.state.pendingProperties) {
+      Object.assign(allProperties, this.state.pendingProperties);
+      this.state.pendingProperties = null; // Clear after applying
+    }
+    
     // Extract any inline properties from the content itself
     const { properties: inlineProperties, cleanContent } = this.extractProperties(finalContent);
     Object.assign(allProperties, inlineProperties);
@@ -164,12 +176,8 @@ class SerialParser {
       allProperties.collapsed = true;
     }
     
-    // Handle priority markers like [#A]
-    const priorityMatch = finalContent.match(/\[#([ABC])\]/);
-    if (priorityMatch) {
-      allProperties.priority = priorityMatch[1];
-      finalContent = finalContent.replace(/\[#([ABC])\]/g, '').trim();
-    }
+    // Don't extract priority markers like [#A] - leave them as inline content
+    // They are not properties, just regular content
     
     const block = {
       content: finalContent || ''
@@ -193,12 +201,16 @@ class SerialParser {
   }
 
   addPropertyToCurrentBlock(propertyContent) {
+    const { properties } = this.extractProperties(propertyContent);
+    
+    // If we don't have a current block yet, store these properties to be applied to the first block
     if (!this.state.currentBlock) {
-      console.error('Warning: Property found without current block:', propertyContent);
+      if (!this.state.pendingProperties) {
+        this.state.pendingProperties = {};
+      }
+      Object.assign(this.state.pendingProperties, properties);
       return;
     }
-    
-    const { properties } = this.extractProperties(propertyContent);
     
     if (!this.state.currentBlock.properties) {
       this.state.currentBlock.properties = {};
@@ -305,9 +317,11 @@ class SerialParser {
     }
     
     // Finalize header if we never encountered a non-property line
-    if (this.state.headerContent !== null) {
+    if (this.state.headerContent !== null || this.state.collectingProperties) {
       const headerBlock = this.finalizeHeader();
-      this.state.rootBlocks.push(headerBlock);
+      if (headerBlock) {
+        this.state.rootBlocks.push(headerBlock);
+      }
     }
     
     return this.state.rootBlocks;
