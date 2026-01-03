@@ -409,7 +409,7 @@ function keeping(patterns, hit = true){
 
 function page(options){
   const format = options.json ? 'json' : (options.format || 'md');
-  const heading = options.heading !== false;
+  const headingLevel = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
   const nest = options.nest || false;
   const keep = keeping(options.less, false) || keeping(options.only, true);
 
@@ -433,11 +433,11 @@ function page(options){
         try {
           const content = (await Deno.readTextFile(path)).replace(/\s+$/, '');
 
-          if (heading && content) {
-            console.log(`# ${name}`);
+          if (headingLevel > 0 && content) {
+            console.log(`${'#'.repeat(headingLevel)} ${name}`);
           }
           console.log(content);
-          if (heading) {
+          if (headingLevel > 0) {
             console.log("");
           }
         } catch (fileError) {
@@ -468,14 +468,14 @@ function page(options){
         // Output data as JSON
         console.log(JSON.stringify(data, null, 2));
       } else if (format === 'md') {
-        if (heading) {
-          console.log(`# ${name}`);
+        if (headingLevel > 0) {
+          console.log(`${'#'.repeat(headingLevel)} ${name}`);
         }
         const markdownLines = nestedJsonToMarkdown(data);
         if (markdownLines.length > 0) {
           console.log(markdownLines.join('\n'));
         }
-        if (heading) {
+        if (headingLevel > 0) {
           console.log();
         }
       } else {
@@ -703,7 +703,8 @@ function fmtBody({heading, format}){
     } else if (format === 'md') {
       const lines = [];
       if (heading && name && content) {
-        lines.push(`## ${name}`);
+        const headingLevel = typeof heading === 'number' ? heading : 2;
+        lines.push(`${'#'.repeat(headingLevel)} ${name}`);
       }
       if (content) {
         typeof content == 'object' ? lines.push(...content) : lines.push(content);
@@ -717,13 +718,13 @@ function fmtBody({heading, format}){
 }
 
 function props(options){
-  const heading = options.heading;
+  const headingLevel = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
   const format = options.json ? 'json' : options.format || "md";
   return function(pageName, propName = null){
     return normal(pageName).
       chain(Task.juxt(Task.of, qryPage)).
-      map(fmtProps({format, heading}, propName)).
-      map(fmtBody({format, heading}));
+      map(fmtProps({format, heading: headingLevel > 0}, propName)).
+      map(fmtBody({format, heading: headingLevel}));
   }
 }
 
@@ -768,7 +769,7 @@ program
   .arguments(demand("name|datestamp"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .option('--no-heading', 'Omit H1 heading and trailing blank line for MD format')
+  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', '1')
   .option('-a, --append <content:string>', 'Append content to page')
   .option('--nest', 'Use hierarchical nesting with format output')
   .option('-l, --less <patterns:string>', 'Less content matching regex patterns', { collect: true })
@@ -824,7 +825,7 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--desc', "With description")
   .option('--json', 'Output JSON format')
-  .option('--no-heading', 'Omit H1 heading and trailing blank line for MD format')
+  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', '1')
   .action(pipeable(props));
 
 program
