@@ -749,7 +749,7 @@ function props(options){
   }
 }
 
-function property(options){
+function prop(options){
   const headingLevel = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
   const format = options.json ? 'json' : options.format || "md";
   return function(pageName){
@@ -759,7 +759,7 @@ function property(options){
         const [key, value] = prop.split('=');
         return `${key}:: ${value}`;
       });
-      
+
       if (format === 'json') {
         return JSON.stringify({success: true, page: name, added: options.add});
       } else {
@@ -806,17 +806,17 @@ function addPageProperties(pageName, options){
 
       // Read existing properties from first block
       const existingProps = firstBlock.properties || {};
-      
+
       // Parse new properties and group them by key (normalize to lowercase)
       const newPropMap = new Map();
-      
+
       for (const propString of options.add) {
         const parts = propString.split('=');
         if (parts.length !== 2) {
           reject(new Error(`Invalid property format: ${propString}. Expected "key=value"`));
           return;
         }
-        
+
         const [key, value] = parts;
         if (!key.trim() || !value.trim()) {
           reject(new Error(`Invalid property format: ${propString}. Key and value cannot be empty`));
@@ -825,7 +825,7 @@ function addPageProperties(pageName, options){
 
         const trimmedKey = key.trim().toLowerCase(); // Normalize to lowercase
         const trimmedValue = value.trim();
-        
+
         // Add to array or create new array
         if (!newPropMap.has(trimmedKey)) {
           newPropMap.set(trimmedKey, [trimmedValue]);
@@ -836,21 +836,21 @@ function addPageProperties(pageName, options){
 
       // Merge existing and new properties
       const mergedProps = {};
-      
+
       // Start with existing properties (convert to arrays if needed)
       for (const [key, value] of Object.entries(existingProps)) {
         if (key !== 'id' && key !== 'uuid') {
           mergedProps[key.toLowerCase()] = Array.isArray(value) ? value : [value];
         }
       }
-      
+
       // Add new properties (augment, don't overwrite)
       for (const [key, newValues] of newPropMap) {
         if (mergedProps[key]) {
           // Merge with existing values, avoiding duplicates
           const existingValues = mergedProps[key];
           const allValues = [...existingValues];
-          
+
           for (const newValue of newValues) {
             if (!allValues.includes(newValue)) {
               allValues.push(newValue);
@@ -866,7 +866,7 @@ function addPageProperties(pageName, options){
       // Set merged properties on FIRST block
       try {
         await callLogseq('logseq.Editor.exitEditingMode');
-        
+
         // Update each property
         for (const [key, values] of Object.entries(mergedProps)) {
           await callLogseq('logseq.Editor.upsertBlockProperty', [
@@ -874,17 +874,17 @@ function addPageProperties(pageName, options){
             key,
             values.join(', ')
           ]);
-          
+
           await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
+
         // Try to force save
         try {
           await callLogseq('logseq.Editor.saveFocusedCodeEditorContent');
         } catch (saveError) {
           // Method may not be available, that's ok
         }
-        
+
       } catch (exitError) {
         // Fall back to basic approach
         for (const [key, values] of Object.entries(mergedProps)) {
@@ -1007,6 +1007,16 @@ program
   .action(pipeable(props));
 
 program
+  .command('prop')
+  .description('Add properties to page')
+  .arguments(demand("name"))
+  .option('--add <property:string>', 'Add property in format "key=value"', { collect: true })
+  .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
+  .option('--json', 'Output JSON format')
+  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', '1')
+  .action(pipeable(prop));
+
+program
   .command('search')
   .alias('s')
   .description('Search pages')
@@ -1049,17 +1059,6 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
   .action(pipeable(query));
-
-program
-  .command('property')
-  .alias('prop')
-  .description('Add properties to pages')
-  .arguments("[name]")
-  .option('--add <property:string>', 'Add property in format "key=value"', { collect: true })
-  .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
-  .option('--json', 'Output JSON format')
-  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', '1')
-  .action(pipeable(property));
 
 // External command stubs for help visibility
 program
