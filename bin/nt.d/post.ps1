@@ -1,14 +1,50 @@
 #!/usr/bin/env pwsh
 
-# Post - Process stdin through serial then pipe to update
-# Usage: echo "content" | nt post [--prepend] [--debug] [--overwrite] <page_name>
+# Post - Process stdin through serial then pipe to update, or handle properties only
+# Usage: echo "content" | nt post [--prepend] [--debug] [--overwrite] [--prop "key=value"...] <page_name>
+# Usage: nt post [--prop "key=value"...] <page_name>
 
-$inputs = [Console]::In.ReadToEnd()
+# Check if stdin has content
+$hasStdin = $false
+try {
+    $stdinAvailable = [Console]::IsInputRedirected
+    if ($stdinAvailable) {
+        $inputs = [Console]::In.ReadToEnd()
+        $hasStdin = -not [string]::IsNullOrWhiteSpace($inputs)
+    }
+} catch {
+    # Fallback if stdin check fails
+    $hasStdin = $false
+}
 
-if ([string]::IsNullOrWhiteSpace($inputs)) {
-    Write-Error "Error: No content received from stdin"
+# Separate prop arguments from other arguments
+$propArgs = @()
+$otherArgs = @()
+$pageName = $null
+
+for ($i = 0; $i -lt $args.Count; $i++) {
+    if ($args[$i] -eq "--prop" -and $i + 1 -lt $args.Count) {
+        $propArgs += $args[$i + 1]
+        $i++
+    } elseif (-not $pageName) {
+        $pageName = $args[$i]
+    } else {
+        $otherArgs += $args[$i]
+    }
+}
+
+if (-not $pageName) {
+    Write-Error "Error: Page name is required"
     exit 1
 }
 
-# Process the input through nt serial, then pipe to nt update with all arguments
-$inputs | ./bin/nt serial | ./bin/nt update $args
+# Call nt prop first if any prop arguments provided
+if ($propArgs.Count -gt 0) {
+    $propAddArgs = $propArgs | ForEach-Object { "--add", $_ }
+    & "$PSScriptRoot/../nt" prop $pageName @propAddArgs
+}
+
+# If stdin was provided, process it through serial then update
+if ($hasStdin) {
+    $inputs | & "$PSScriptRoot/../nt" serial | & "$PSScriptRoot/../nt" update $otherArgs $pageName
+}
