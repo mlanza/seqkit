@@ -14,7 +14,9 @@ async function loadConfig(path) {
 
     return { shorthand, agentignore };
   } catch {
-    return {};
+    const shorthand = {};
+    const agentignore = [];
+    return { shorthand, agentignore };
   }
 };
 
