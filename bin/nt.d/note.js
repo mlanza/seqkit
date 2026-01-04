@@ -326,17 +326,6 @@ async function incoming(one, only) {
   }
 }
 
-function oldPipeable(g){
-  return async function (options, ...args){
-    const f = g(options);
-    await incoming(function(arg){
-      return f(arg, ...args);
-    }, function(){
-      return f(...args);
-    });
-  }
-}
-
 // Recursive filtering function for blocks
 function selectBlock(block, keep) {
   const {content, properties} = block;
