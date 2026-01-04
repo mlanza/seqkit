@@ -655,10 +655,6 @@ function query(options){
   }
 }
 
-
-
-
-
 function normalizeOptions(options){
   const format = options.json ? 'json' : (options.format || 'md');
   const heading = options.heading !== false;
