@@ -421,7 +421,6 @@ function page(options){
 
   return async function(given){
     const {shorthand, agentignore} = await loadConfig(NOTE_CONFIG);
-    console.log({shorthand, agentignore});
     const patterns = options.agent || options.human ? agentignore : null;
     const agentLess = options.agent ? patterns : null;
     const humanOnly = options.human ? patterns : null;
