@@ -1,6 +1,6 @@
 # Note
 
-**Note** is a tool your agent needs to access and update your [Logseq](https://logseq.com) content.  CLIs are ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike — and they're easier to wrap as MCP servers, than the reverse.
+**Note** is a tool to access and update your [Logseq](https://logseq.com) content.  CLIs are ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike — and they're easier to wrap as MCP servers, than the reverse.
 
 <p align="center">
   <img src="./images/logo.png" style="width: 300px; max-width: 100%;" />
