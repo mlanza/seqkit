@@ -196,11 +196,11 @@ async function identify(given){
   const journal = given.match(/(\d{4})-?(\d{2})-?(\d{2})(?!\d)/);
   const normalized = await getNormalizedName(given) || (journal ? await getJournalPage(given) : null);
   const alias = normalized ? await aka(normalized) : null;
-  const name = alias || normalized || given; // fallback to given if normalized is null
+  const name = alias || normalized;
   const day = journal ? parseInt(journal[1] + journal[2] + journal[3]) : await journalDay(name);
   const path = name ? getFilePath(day, name) : null;
   const identifiers = {given, day, normalized, name, path};
-  console.log({identifiers});
+  //console.log({identifiers});
   return identifiers;
 }
 
@@ -439,7 +439,6 @@ function page(options){
       }
 
       const found = await exists(path);
-      console.log({found})
       if (!found) {
         return;
       }
@@ -542,8 +541,8 @@ function tskNamed(id){
   return new Task(async function(reject, resolve){
     try {
       if (id) {
-        const {normalized} = await identify(id);
-        resolve(normalized);
+        const {name} = await identify(id);
+        resolve(name);
       } else {
         resolve(null);
       }
@@ -687,7 +686,7 @@ function qryPage(name){
 function tskNames(name){
   return name ? new Task(function(reject, resolve){
     identify(name).then(function(names){
-      if (names?.normalized) {
+      if (names?.name) {
         resolve(names);
       } else {
         reject(new Error(`Page not found: ${name}`));
