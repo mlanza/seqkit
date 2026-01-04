@@ -200,7 +200,7 @@ async function identify(given){
   const day = journal ? parseInt(journal[1] + journal[2] + journal[3]) : await journalDay(name);
   const path = name ? getFilePath(day, name) : null;
   const identifiers = {given, day, normalized, name, path};
-  //console.log({identifiers});
+  console.log({identifiers});
   return identifiers;
 }
 
@@ -424,6 +424,7 @@ function page(options){
   const nest = options.nest || false;
 
   return async function(given){
+
     const {shorthand, agentignore} = await loadConfig(NOTE_CONFIG);
     const patterns = options.agent || options.human ? agentignore : null;
     const agentLess = options.agent ? patterns : null;
@@ -432,13 +433,13 @@ function page(options){
 
     // Load agent patterns and merge with existing patterns if --agent flag is used
     try {
-      const {name, path, normalized} = await identify(given);
-      if (!normalized) {
+      const {name, path} = await identify(given);
+      if (!name) {
         throw new Error(`Page not found: ${given}`);
       }
 
       const found = await exists(path);
-
+      console.log({found})
       if (!found) {
         return;
       }
