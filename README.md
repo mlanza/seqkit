@@ -88,6 +88,7 @@ Set these environment variables:
 A few entries worth setting up:
 
 ```toml
+# config.toml
 agentignore = [
   "~tasks",
   "~links",
