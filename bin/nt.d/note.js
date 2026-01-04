@@ -536,9 +536,7 @@ function search(term){
   });
 }
 
-function path(){
-  return tskPath;
-}
+const path = constantly(tskPath);
 
 function tskPath(name){
   return tskIdentify(name).map(({path}) => path);
