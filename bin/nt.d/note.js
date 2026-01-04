@@ -685,10 +685,6 @@ function tskIdentify(name){
   }) : Task.rejected(new Error('Page name is required'));
 }
 
-function normal(name){
-  return tskIdentify(name).map(({name}) => name);
-}
-
 function fmtProps({format}, propName = null){
   return function([name, results]){
     const pageData = results[0]?.[0] || null;
@@ -732,7 +728,7 @@ function props(options){
   const headingLevel = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
   const format = options.json ? 'json' : options.format || "md";
   return function(pageName, propName = null){
-    return pageName ? normal(pageName).
+    return pageName ? tskNamed(pageName).
       chain(Task.juxt(Task.of, qryPage)).
       map(fmtProps({format, heading: headingLevel > 0}, propName)).
       map(fmtBody({format, heading: headingLevel})) : Task.of(null);
