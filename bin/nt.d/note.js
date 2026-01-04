@@ -537,10 +537,11 @@ function search(term){
 }
 
 function path(){
-  return function(name){
-    return tskIdentify(name).
-      map(({path}) => path);
-  }
+  return tskPath;
+}
+
+function tskPath(name){
+  return tskIdentify(name).map(({path}) => path);
 }
 
 function tskNamed(id){
