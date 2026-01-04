@@ -536,6 +536,10 @@ function search(term){
   });
 }
 
+function path(){
+  return tskPath;
+}
+
 function tskPath(name){
   return tskIdentify(name).map(({path}) => path);
 }
@@ -549,8 +553,6 @@ function constantly(f){
     return f;
   }
 }
-
-const path = constantly(tskPath);
 
 function tags(options){
   return has(options, "tags");
