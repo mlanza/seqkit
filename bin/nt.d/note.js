@@ -1021,7 +1021,7 @@ program
 program
   .command('about')
   .alias('a')
-  .arguments("<name>")
+  .arguments("<name...>")
   .description('Retrieves information about a topic');
 
 program
