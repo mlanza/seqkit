@@ -8,4 +8,5 @@ if (-not $wikilinks) {
   return
 }
 write-host "---"
-$wikilinks | nt about
+$wikilinks | nt prereq | nt seen | nt page --agent --heading=2
+
