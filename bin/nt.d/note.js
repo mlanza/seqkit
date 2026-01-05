@@ -337,9 +337,10 @@ async function incoming(one, only) {
 // Recursive filtering function for blocks
 function selectBlock(block, keep) {
   const {content, properties} = block;
+  const props = /^[^\s:]+:: .+/;
 
   // Test content with and without marker to catch both cases
-  const kept = keep(content);
+  const kept = props.test(content) || keep(content);
 
   if (!kept) {
     return null;
