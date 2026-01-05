@@ -118,17 +118,20 @@ function toInt(s) {
 function tskConfig(path){
   return new Task(async function(reject, resolve){
     try {
-      const text = await Deno.readTextFile(path);
-      const cfg = parse(text);
+      const existing = await exists(path);
+      if (existing) {
+        const text = await Deno.readTextFile(existing);
+        const cfg = parse(text);
 
-      const shorthand = cfg.shorthand ?? {};
-      const agentignore = cfg.agentignore ?? [];
+        const shorthand = cfg.shorthand ?? {};
+        const agentignore = cfg.agentignore ?? [];
 
-      resolve({ shorthand, agentignore });
+        resolve({ shorthand, agentignore });
+      } else {
+        resolve({ shorthand: {}, agentignore: [] });
+      }
     } catch {
-      const shorthand = {};
-      const agentignore = [];
-      resolve({ shorthand, agentignore });
+      reject(new Error(`Cannot read config at ${path}.`));
     }
   });
 }
