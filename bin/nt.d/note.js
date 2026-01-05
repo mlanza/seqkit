@@ -190,25 +190,30 @@ function tskGetJournalPage(datestamp){
 
 const getJournalPage = comp(promise, tskGetJournalPage);
 
-async function identify(given){
-  if (!given) {
-    throw new Error('Name argument is required');
-  }
+function tskIdentify(given){
+  return given ? new Task(async function(reject, resolve){
+    try {
+      if (!LOGSEQ_REPO) {
+        throw new Error('LOGSEQ_REPO environment variable is not set');
+      }
 
-  if (!LOGSEQ_REPO) {
-    throw new Error('LOGSEQ_REPO environment variable is not set');
-  }
+      const journal = given.match(/(\d{4})-?(\d{2})-?(\d{2})(?!\d)/);
+      const normalized = await getNormalizedName(given) || (journal ? await getJournalPage(given) : null);
+      const alias = normalized ? await aka(normalized) : null;
+      const name = alias || normalized;
+      const day = journal ? parseInt(journal[1] + journal[2] + journal[3]) : await journalDay(name);
+      const path = name ? getFilePath(day, name) : null;
+      const identifiers = {given, day, normalized, name, path};
+      //console.log({identifiers});
+      resolve(identifiers);
 
-  const journal = given.match(/(\d{4})-?(\d{2})-?(\d{2})(?!\d)/);
-  const normalized = await getNormalizedName(given) || (journal ? await getJournalPage(given) : null);
-  const alias = normalized ? await aka(normalized) : null;
-  const name = alias || normalized;
-  const day = journal ? parseInt(journal[1] + journal[2] + journal[3]) : await journalDay(name);
-  const path = name ? getFilePath(day, name) : null;
-  const identifiers = {given, day, normalized, name, path};
-  //console.log({identifiers});
-  return identifiers;
+    } catch (ex) {
+      reject(ex);
+    }
+  }) : Task.rejected(new Error('Page name is required'));
 }
+
+const identify = comp(promise, tskIdentify);
 
 function tskLogseq(method, args){
   return new Task(async function(reject, resolve){
@@ -629,12 +634,6 @@ function qry(query, limit = Infinity){
 
 function qryPage(name){
   return qry(`[:find (pull ?p [*]) :where [?p :block/original-name "${name}"]]`);
-}
-
-function tskIdentify(name){
-  return name ? new Task(function(reject, resolve){
-    identify(name).then(resolve).catch(reject);
-  }) : Task.rejected(new Error('Page name is required'));
 }
 
 function fmtProps({format}, propName = null){
