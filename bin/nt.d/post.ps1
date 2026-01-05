@@ -44,7 +44,7 @@ if ($propArgs.Count -gt 0) {
     & "$PSScriptRoot/../nt" prop $pageName @propAddArgs
 }
 
-# If stdin was provided, process it through serial then update
+# If stdin was provided, process it through serial then modify
 if ($hasStdin) {
-    $inputs | & "$PSScriptRoot/../nt" serial | & "$PSScriptRoot/../nt" update $otherArgs $pageName
+    $inputs | & "$PSScriptRoot/../nt" serial | & "$PSScriptRoot/update.js" $otherArgs $pageName
 }
