@@ -4,9 +4,8 @@ $prompt = $input | Out-String
 $wikilinks = $prompt | nt wikilinks
 
 $prompt
-if (-not $wikilinks) {
-  return
+if ($wikilinks) {
+  write-host "---"
+  $wikilinks | nt prereq | nt seen | nt page --agent --heading=2
 }
-write-host "---"
-$wikilinks | nt prereq | nt seen | nt page --agent --heading=2
 
