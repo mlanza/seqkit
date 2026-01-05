@@ -431,7 +431,7 @@ function tskGetPage(given, options){
       if (format === 'md' && !nest && keep == null) {
         const found = await exists(path);
         if (!found) {
-          reject(new Error(`Page not found: ${given}`));
+          resolve(null);
           return;
         }
 
