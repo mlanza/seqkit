@@ -1,6 +1,6 @@
 # Note
 
-**Note** is a tool for managing text content of all kinds — Skills, Commands, Prompts, Rules, Knowledge — in [Logseq](https://logseq.com).  CLIs are ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike — and they're easier to wrap as MCP servers, than the reverse.
+**Note** is a tool for managing text content of all kinds — Skills, Commands, Prompts, Rules, Knowledge — in [Logseq](https://logseq.com).  CLIs are ephemeral, composeable and available to humans 🧔🏼 and agents 🤖 alike.
 
 <p align="center">
   <img src="./images/logo.png" style="width: 300px; max-width: 100%;" />
