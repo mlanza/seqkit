@@ -60,8 +60,8 @@ Sample tools calls:
 * `nt day -1 | nt page` - yesterday's journal page
 * `nt day $(seq 0 -90) | nt page` - to review 90 days of journal entries
 * `nt day $(seq 0 -30) | nt page | nt links` - links from latest journal entries
-* `nt day $(seq 0 -30) | nt page --only "~tasks"` - to display only TODOs
-* `nt day $(seq 0 -30) | nt page --less "~tasks"` - to display everything but TODOs
+* `nt day $(seq 0 -30) | nt page --only "tasks"` - to display only TODOs
+* `nt day $(seq 0 -30) | nt page --less "tasks"` - to display everything but TODOs
 * `nt day $(seq 0 -30) | nt page` - a range of journal entries (`zsh`)
 * `nt day (0..-30) | nt page` - a range of journal entries (`pwsh`)
 
@@ -90,14 +90,14 @@ A few entries worth setting up:
 ```toml
 # config.toml
 agentignore = [
-  "~tasks",
-  "~links",
+  "tasks",
+  "links",
 ]
 
 [shorthand]
-"~props" = "^[^\\s:]+::"
-"~tasks" = "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)"
-"~links" = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+\"[^\"\\r\\n]*\")?\\s*\\))\\s*$"
+"props" = "^[^\\s:]+::"
+"tasks" = "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)"
+"links" = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+\"[^\"\\r\\n]*\")?\\s*\\))\\s*$"
 ```
 
 Once done, start Logseq, start your shell and issue a few commands.
