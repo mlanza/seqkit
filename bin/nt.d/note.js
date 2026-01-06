@@ -1717,22 +1717,22 @@ program
   .command(
     "config",
     new Command()
-      .description("Configuration checks")
+      .description("Show configuration")
       .action(function(){
         this.showHelp();
       })
       .command("repo", new Command()
-        .description("Display config Logseq repo")
+        .description("Show Logseq repo")
         .action(function(){
           console.log(config.logseq.repo);
         }))
       .command("shorthand", new Command()
-        .description("Display config shorthand")
+        .description("Show shorthand")
         .action(function(){
           Object.entries(config.shorthand).forEach(([key, value]) => console.log(key, " => ", value));
         }))
       .command("agentignore", new Command()
-        .description("Display config agentignore")
+        .description("Show agentignore")
         .action(function(){
           config.agentignore.forEach(ignored => console.log(ignored));
         })));
