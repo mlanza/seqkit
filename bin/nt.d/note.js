@@ -1719,7 +1719,7 @@ program
     new Command()
       .description("Configuration checks")
       .action(function(){
-         this.showHelp();
+        this.showHelp();
       })
       .command("repo", new Command()
         .description("Display config Logseq repo")
