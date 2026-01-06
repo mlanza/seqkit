@@ -1308,8 +1308,8 @@ program
     // Call purge if overwrite mode is enabled
     if (overwriteMode) {
       debugLog("Overwrite mode enabled, purging page first...", debugMode);
-      const purgeCommand = new Deno.Command("pwsh", {
-        args: ["./bin/nt.d/purge.ps1", ...(debugMode ? ["--debug"] : []), pageName]
+      const purgeCommand = new Deno.Command("deno", {
+        args: ["run", "--allow-all", "./bin/nt.d/wipe.js", ...(debugMode ? ["--debug"] : []), pageName]
       });
 
       const { code } = await purgeCommand.output();
