@@ -315,12 +315,21 @@ function prerequisites(name){
 }
 
 // Helper function to call wipe command logic
-function tskWipe(pageName = false, debugMode = false) {
+function tskWipe(pageName, options) {
+  const logger = getLogger(options.debug || false);
   return new Task(async function(reject, resolve) {
-    const logger = getLogger(debugMode);
     logger.log(`Wiping content from page '${pageName}'...`);
 
     try {
+      // Check environment variables
+      if (!LOGSEQ_ENDPOINT || !LOGSEQ_TOKEN) {
+        throw new Error("LOGSEQ_ENDPOINT and LOGSEQ_TOKEN environment variables must be set");
+      }
+
+      if (!pageName) {
+        throw new Error("Page name must be specified");
+      }
+
       // Check if page exists
       const pageCheck = await callLogseq('logseq.Editor.getPage', [pageName]);
 
@@ -1390,7 +1399,7 @@ program
 
       try {
         // Use integrated wipe command
-        await wipeCommand(pageName);
+        await wipeCommand(pageName, options);
       } catch (error) {
         logger.log(`Warning: Purge had issues, continuing with overwrite... ${error.message}`);
         // Continue with overwrite even if purge had issues
@@ -1516,19 +1525,8 @@ program
   .arguments(demand("name"))
   .option('--debug', 'Enable debug output')
   .action(async function(options, pageName){
-    const debugMode = options.debug || false;
-
-    // Check environment variables
-    if (!LOGSEQ_ENDPOINT || !LOGSEQ_TOKEN) {
-      abort("Error: LOGSEQ_ENDPOINT and LOGSEQ_TOKEN environment variables must be set");
-    }
-
-    if (!pageName) {
-      abort("Usage: wipe [--debug] <page_name>");
-    }
-
     try {
-      const result = await wipeCommand(pageName, debugMode);
+      const result = await wipeCommand(pageName, options);
 
       if (result.alreadyEmpty) {
         if (result.propertiesCount > 0) {
