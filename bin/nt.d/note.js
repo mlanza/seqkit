@@ -1345,7 +1345,8 @@ program
 
 program
   .command('update')
-  .description('Insert structured content into a Logseq page using insertBatchBlock')
+  .hidden()
+  .description('Append stdin structured content to page')
   .arguments(demand("name"))
   .option('--prepend', 'Prepend content instead of appending')
   .option('--debug', 'Enable debug output')
@@ -1511,7 +1512,7 @@ program
 
 program
   .command('wipe')
-  .description('Remove all content blocks from a Logseq page while preserving properties')
+  .description('Wipe all content from a page while keeping the properties')
   .arguments(demand("name"))
   .option('--debug', 'Enable debug output')
   .action(async function(options, pageName){
