@@ -1338,7 +1338,7 @@ program
 program
   .command('post')
   .description('Append stdin content to page')
-  .arguments("<name>")
+  .arguments(demand("name"))
   .option('--prepend', 'Prepend content instead')
   .option('--overwrite', 'Purges any existing page content (not properties)')
   .option('--debug', 'Enable debug output');
@@ -1346,7 +1346,7 @@ program
 program
   .command('update')
   .description('Insert structured content into a Logseq page using insertBatchBlock')
-  .arguments("<name>")
+  .arguments(demand("name"))
   .option('--prepend', 'Prepend content instead of appending')
   .option('--debug', 'Enable debug output')
   .option('--overwrite', 'Purge any existing page content (not properties)')
@@ -1512,7 +1512,7 @@ program
 program
   .command('wipe')
   .description('Remove all content blocks from a Logseq page while preserving properties')
-  .arguments("<name>")
+  .arguments(demand("name"))
   .option('--debug', 'Enable debug output')
   .action(async function(options, pageName){
     const debugMode = options.debug || false;
@@ -1671,7 +1671,7 @@ program
 program
   .command('about')
   .alias('a')
-  .arguments("<name...>")
+  .arguments(demand("name..."))
   .description('Retrieves information about a topic');
 
 program
