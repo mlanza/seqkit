@@ -316,6 +316,86 @@ function prerequisites(name){
   });
 }
 
+// Helper function to call wipe command logic
+async function wipeCommand(pageName, debugMode = false) {
+  debugLog(`Wiping content from page '${pageName}'...`, debugMode);
+
+  try {
+    // Check if page exists
+    const pageCheck = await callLogseq('logseq.Editor.getPage', [pageName]);
+    
+    if (!pageCheck || !pageCheck.uuid) {
+      // Page doesn't exist, no need to wipe
+      return;
+    }
+
+    const pageUuid = pageCheck.uuid;
+    debugLog(`Page exists with UUID: ${pageUuid}`, debugMode);
+
+    // Get all page blocks
+    const pageBlocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
+
+    if (!pageBlocks || pageBlocks.length === 0) {
+      debugLog(`Page '${pageName}' is already empty`, debugMode);
+      return;
+    }
+
+    // Find blocks to delete (those without meaningful properties)
+    const blocksToDelete = [];
+    const propertiesBlocksFound = [];
+
+    for (const block of pageBlocks) {
+      let hasRealProperties = false;
+      
+      if (block.properties && typeof block.properties === 'object' && Object.keys(block.properties).length > 0) {
+        if (block.content !== "" && block.content !== null) {
+          hasRealProperties = true;
+        }
+      }
+      
+      if (hasRealProperties) {
+        propertiesBlocksFound.push(block);
+        debugLog(`Found properties block, keeping: ${block.uuid}`, debugMode);
+      } else {
+        blocksToDelete.push(block);
+        debugLog(`Marked for deletion: ${block.uuid} - content: '${block.content}'`, debugMode);
+      }
+    }
+
+    if (blocksToDelete.length === 0) {
+      debugLog(`Page '${pageName}' already only contains properties`, debugMode);
+      return;
+    }
+
+    debugLog(`Found ${blocksToDelete.length} blocks to delete`, debugMode);
+    debugLog(`Found ${propertiesBlocksFound.length} properties blocks to keep`, debugMode);
+
+    // Delete each non-property block
+    let deletedCount = 0;
+    for (const block of blocksToDelete) {
+      debugLog(`Deleting block: ${block.uuid}`, debugMode);
+      
+      try {
+        const deleteResponse = await callLogseq('logseq.Editor.removeBlock', [block.uuid]);
+        
+        if (deleteResponse === null) {
+          deletedCount++;
+          debugLog(`Deleted block: ${block.uuid}`, debugMode);
+        } else {
+          debugLog(`Failed to delete block: ${block.uuid}`, debugMode);
+        }
+      } catch (error) {
+        debugLog(`Failed to delete block: ${block.uuid} - ${error.message}`, debugMode);
+      }
+    }
+
+    debugLog(`Wiped ${deletedCount} content blocks from page '${pageName}' (preserved ${propertiesBlocksFound.length} property blocks)`, debugMode);
+
+  } catch (error) {
+    throw error;
+  }
+}
+
 function pipeable(g){
   return async function (options, ...args){
     const f = g(options);
@@ -1308,13 +1388,12 @@ program
     // Call purge if overwrite mode is enabled
     if (overwriteMode) {
       debugLog("Overwrite mode enabled, purging page first...", debugMode);
-      const purgeCommand = new Deno.Command("deno", {
-        args: ["run", "--allow-all", "./bin/nt.d/wipe.js", ...(debugMode ? ["--debug"] : []), pageName]
-      });
-
-      const { code } = await purgeCommand.output();
-      if (code !== 0) {
-        debugLog("Warning: Purge had issues, continuing with overwrite...", debugMode);
+      
+      try {
+        // Use integrated wipe command
+        await wipeCommand(pageName, debugMode);
+      } catch (error) {
+        debugLog(`Warning: Purge had issues, continuing with overwrite... ${error.message}`, debugMode);
         // Continue with overwrite even if purge had issues
       }
     }
@@ -1429,6 +1508,104 @@ program
       console.log(`✅ ${action} ${blockCount} blocks to page '${pageName}'`);
     } else {
       abort("Error creating page");
+    }
+  });
+
+program
+  .command('wipe')
+  .description('Remove all content blocks from a Logseq page while preserving properties')
+  .arguments("<page_name>")
+  .option('--debug', 'Enable debug output')
+  .action(async function(options, pageName){
+    const debugMode = options.debug || false;
+
+    // Check environment variables
+    if (!LOGSEQ_ENDPOINT || !LOGSEQ_TOKEN) {
+      abort("Error: LOGSEQ_ENDPOINT and LOGSEQ_TOKEN environment variables must be set");
+    }
+
+    if (!pageName) {
+      abort("Usage: wipe [--debug] <page_name>");
+    }
+
+    debugLog(`Wiping content from page '${pageName}'...`, debugMode);
+
+    try {
+      // Check if page exists
+      const pageCheck = await callLogseq('logseq.Editor.getPage', [pageName]);
+      
+      if (!pageCheck || !pageCheck.uuid) {
+        abort(`Error: Page '${pageName}' does not exist`);
+      }
+
+      const pageUuid = pageCheck.uuid;
+      debugLog(`Page exists with UUID: ${pageUuid}`, debugMode);
+
+      // Get all page blocks
+      const pageBlocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
+
+      if (!pageBlocks || pageBlocks.length === 0) {
+        console.log(`✅ Page '${pageName}' is already empty`);
+        return;
+      }
+
+      // Find blocks to delete (those without meaningful properties)
+      const blocksToDelete = [];
+      const propertiesBlocksFound = [];
+
+      for (const block of pageBlocks) {
+        let hasRealProperties = false;
+        
+        if (block.properties && typeof block.properties === 'object' && Object.keys(block.properties).length > 0) {
+          if (block.content !== "" && block.content !== null) {
+            hasRealProperties = true;
+          }
+        }
+        
+        if (hasRealProperties) {
+          propertiesBlocksFound.push(block);
+          debugLog(`Found properties block, keeping: ${block.uuid}`, debugMode);
+        } else {
+          blocksToDelete.push(block);
+          debugLog(`Marked for deletion: ${block.uuid} - content: '${block.content}'`, debugMode);
+        }
+      }
+
+      if (blocksToDelete.length === 0) {
+        console.log(`✅ Page '${pageName}' already only contains properties`);
+        return;
+      }
+
+      debugLog(`Found ${blocksToDelete.length} blocks to delete`, debugMode);
+      debugLog(`Found ${propertiesBlocksFound.length} properties blocks to keep`, debugMode);
+
+      // Delete each non-property block
+      let deletedCount = 0;
+      for (const block of blocksToDelete) {
+        debugLog(`Deleting block: ${block.uuid}`, debugMode);
+        
+        try {
+          const deleteResponse = await callLogseq('logseq.Editor.removeBlock', [block.uuid]);
+          
+          if (deleteResponse === null) {
+            deletedCount++;
+            debugLog(`Deleted block: ${block.uuid}`, debugMode);
+          } else {
+            debugLog(`Failed to delete block: ${block.uuid}`, debugMode);
+          }
+        } catch (error) {
+          debugLog(`Failed to delete block: ${block.uuid} - ${error.message}`, debugMode);
+        }
+      }
+
+      if (deletedCount === blocksToDelete.length) {
+        console.log(`✅ Wiped ${deletedCount} content blocks from page '${pageName}' (preserved ${propertiesBlocksFound.length} property blocks)`);
+      } else {
+        abort(`Error: Only deleted ${deletedCount} out of ${blocksToDelete.length} blocks`);
+      }
+
+    } catch (error) {
+      abort(`Error: ${error.message}`);
     }
   });
 
