@@ -115,10 +115,8 @@ function toInt(s) {
   }
 }
 
-function debugLog(message, debug = false) {
-  if (debug) {
-    console.log(message);
-  }
+function getLogger(debug = false) {
+  return debug ? { log: console.log } : { log: () => {} };
 }
 
 async function readStdin() {
@@ -317,9 +315,10 @@ function prerequisites(name){
 }
 
 // Helper function to call wipe command logic
-function tskWipe(pageName, debugMode = false) {
+function tskWipe(pageName = false, debugMode = false) {
   return new Task(async function(reject, resolve) {
-    debugLog(`Wiping content from page '${pageName}'...`, debugMode);
+    const logger = getLogger(debugMode);
+    logger.log(`Wiping content from page '${pageName}'...`);
 
     try {
       // Check if page exists
@@ -332,7 +331,7 @@ function tskWipe(pageName, debugMode = false) {
       }
 
       const pageUuid = pageCheck.uuid;
-      debugLog(`Page exists with UUID: ${pageUuid}`, debugMode);
+      logger.log(`Page exists with UUID: ${pageUuid}`);
 
       // Get all page blocks
       const pageBlocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
@@ -357,10 +356,10 @@ function tskWipe(pageName, debugMode = false) {
 
         if (hasRealProperties) {
           propertiesBlocksFound.push(block);
-          debugLog(`Found properties block, keeping: ${block.uuid}`, debugMode);
+          logger.log(`Found properties block, keeping: ${block.uuid}`);
         } else {
           blocksToDelete.push(block);
-          debugLog(`Marked for deletion: ${block.uuid} - content: '${block.content}'`, debugMode);
+          logger.log(`Marked for deletion: ${block.uuid} - content: '${block.content}'`);
         }
       }
 
@@ -369,25 +368,25 @@ function tskWipe(pageName, debugMode = false) {
         return;
       }
 
-      debugLog(`Found ${blocksToDelete.length} blocks to delete`, debugMode);
-      debugLog(`Found ${propertiesBlocksFound.length} properties blocks to keep`, debugMode);
+      logger.log(`Found ${blocksToDelete.length} blocks to delete`);
+      logger.log(`Found ${propertiesBlocksFound.length} properties blocks to keep`);
 
       // Delete each non-property block
       let deletedCount = 0;
       for (const block of blocksToDelete) {
-        debugLog(`Deleting block: ${block.uuid}`, debugMode);
+        logger.log(`Deleting block: ${block.uuid}`);
 
         try {
           const deleteResponse = await callLogseq('logseq.Editor.removeBlock', [block.uuid]);
 
           if (deleteResponse === null) {
             deletedCount++;
-            debugLog(`Deleted block: ${block.uuid}`, debugMode);
+            logger.log(`Deleted block: ${block.uuid}`);
           } else {
-            debugLog(`Failed to delete block: ${block.uuid}`, debugMode);
+            logger.log(`Failed to delete block: ${block.uuid}`);
           }
         } catch (error) {
-          debugLog(`Failed to delete block: ${block.uuid} - ${error.message}`, debugMode);
+          logger.log(`Failed to delete block: ${block.uuid} - ${error.message}`);
         }
       }
 
@@ -398,7 +397,7 @@ function tskWipe(pageName, debugMode = false) {
         alreadyEmpty: false
       };
 
-      debugLog(`Wiped ${deletedCount} content blocks from page '${pageName}' (preserved ${propertiesBlocksFound.length} property blocks)`, debugMode);
+      logger.log(`Wiped ${deletedCount} content blocks from page '${pageName}' (preserved ${propertiesBlocksFound.length} property blocks)`);
 
       resolve(result);
 
@@ -1355,6 +1354,7 @@ program
     const prependMode = options.prepend || false;
     const debugMode = options.debug || false;
     const overwriteMode = options.overwrite || false;
+    const logger = getLogger(debugMode);
 
     // Check environment variables
     if (!LOGSEQ_ENDPOINT || !LOGSEQ_TOKEN) {
@@ -1365,7 +1365,7 @@ program
       abort("Usage: modify [--prepend] [--debug] [--overwrite] <page_name>");
     }
 
-    debugLog(`Page: ${pageName}, Prepend: ${prependMode}, Debug: ${debugMode}, Overwrite: ${overwriteMode}`, debugMode);
+    logger.log(`Page: ${pageName}, Prepend: ${prependMode}, Overwrite: ${overwriteMode}`);
 
     // Read JSON payload from stdin
     const payload = await readStdin();
@@ -1374,7 +1374,7 @@ program
       abort("Error: No payload received from stdin");
     }
 
-    debugLog(`Payload: ${payload}`, debugMode);
+    logger.log(`Payload: ${payload}`);
 
     // Parse JSON payload
     let parsedPayload;
@@ -1386,13 +1386,13 @@ program
 
     // Call purge if overwrite mode is enabled
     if (overwriteMode) {
-      debugLog("Overwrite mode enabled, purging page first...", debugMode);
+      logger.log("Overwrite mode enabled, purging page first...");
 
       try {
         // Use integrated wipe command
-        await wipeCommand(pageName, debugMode);
+        await wipeCommand(pageName);
       } catch (error) {
-        debugLog(`Warning: Purge had issues, continuing with overwrite... ${error.message}`, debugMode);
+        logger.log(`Warning: Purge had issues, continuing with overwrite... ${error.message}`);
         // Continue with overwrite even if purge had issues
       }
     }
@@ -1405,17 +1405,17 @@ program
       abort(`Error checking page existence: ${error.message}`);
     }
 
-    debugLog(`Page check result: ${JSON.stringify(pageCheck)}`, debugMode);
+    logger.log(`Page check result: ${JSON.stringify(pageCheck)}`);
 
     let insertResponse;
 
     if (pageCheck && pageCheck.uuid) {
       // Page exists
       const pageUuid = pageCheck.uuid;
-      debugLog(`Page exists with UUID: ${pageUuid}`, debugMode);
+      logger.log(`Page exists with UUID: ${pageUuid}`);
 
       if (prependMode) {
-        debugLog("Prepending content...", debugMode);
+        logger.log("Prepending content...");
 
         // Get all page blocks to check for properties
         const pageBlocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
@@ -1431,8 +1431,8 @@ program
         }
 
         if (lastPropertiesBlock) {
-          debugLog(`Found properties, inserting after them...`, debugMode);
-          debugLog(`Properties content: ${lastPropertiesBlock.content}`, debugMode);
+          logger.log(`Found properties, inserting after them...`);
+          logger.log(`Properties content: ${lastPropertiesBlock.content}`);
 
           // Insert after the properties block using sibling:true
           insertResponse = await callLogseq('logseq.Editor.insertBatchBlock', [
@@ -1441,7 +1441,7 @@ program
             { sibling: true }
           ]);
         } else {
-          debugLog("No properties found, prepending to top...", debugMode);
+          logger.log("No properties found, prepending to top...");
 
           // Prepend using page UUID with {sibling: false, before: true}
           insertResponse = await callLogseq('logseq.Editor.insertBatchBlock', [
@@ -1451,13 +1451,13 @@ program
           ]);
         }
       } else {
-        debugLog("Appending content...", debugMode);
+        logger.log("Appending content...");
 
         const pageBlocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
 
         if (pageBlocks && Array.isArray(pageBlocks) && pageBlocks.length > 0) {
           const lastBlockUuid = pageBlocks[pageBlocks.length - 1].uuid;
-          debugLog(`Appending after block: ${lastBlockUuid}`, debugMode);
+          logger.log(`Appending after block: ${lastBlockUuid}`);
 
           // Append after last block using sibling:true
           insertResponse = await callLogseq('logseq.Editor.insertBatchBlock', [
@@ -1466,7 +1466,7 @@ program
             { sibling: true }
           ]);
         } else {
-          debugLog("Page is empty, inserting at top...", debugMode);
+          logger.log("Page is empty, inserting at top...");
 
           insertResponse = await callLogseq('logseq.Editor.insertBatchBlock', [
             pageUuid,
@@ -1477,13 +1477,13 @@ program
       }
     } else {
       // Page doesn't exist, create it
-      debugLog("Page doesn't exist, creating new page...", debugMode);
+      logger.log("Page doesn't exist, creating new page...");
 
       const createResponse = await callLogseq('logseq.Editor.createPage', [pageName, {}]);
 
       if (createResponse && createResponse.uuid) {
         const pageUuid = createResponse.uuid;
-        debugLog(`Created page with UUID: ${pageUuid}`, debugMode);
+        logger.log(`Created page with UUID: ${pageUuid}`);
 
         // Insert into new page using page UUID
         insertResponse = await callLogseq('logseq.Editor.insertBatchBlock', [
