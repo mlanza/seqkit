@@ -1344,25 +1344,9 @@ program
   .option('--debug', 'Enable debug output');
 
 program
-  .command('serial')
-  .description('Append stdin content to page')
-  .action(async function(){
-    const input = await Deno.readTextFile('/dev/stdin');
-
-    if (!input.trim()) {
-      console.error("Error: No input provided via stdin");
-      Deno.exit(1);
-    }
-
-    const parser = new SerialParser();
-    const result = parser.parse(input);
-    console.log(JSON.stringify(result, null, 2));
-  });
-
-program
   .command('update')
   .description('Insert structured content into a Logseq page using insertBatchBlock')
-  .arguments("<page_name>")
+  .arguments("<name>")
   .option('--prepend', 'Prepend content instead of appending')
   .option('--debug', 'Enable debug output')
   .option('--overwrite', 'Purge any existing page content (not properties)')
@@ -1528,7 +1512,7 @@ program
 program
   .command('wipe')
   .description('Remove all content blocks from a Logseq page while preserving properties')
-  .arguments("<page_name>")
+  .arguments("<name>")
   .option('--debug', 'Enable debug output')
   .action(async function(options, pageName){
     const debugMode = options.debug || false;
@@ -1689,6 +1673,23 @@ program
   .alias('a')
   .arguments("<name...>")
   .description('Retrieves information about a topic');
+
+program
+  .command('serial')
+  .description('Append stdin content to page')
+  .arguments(PIPED)
+  .action(async function(){
+    const input = await Deno.readTextFile('/dev/stdin');
+
+    if (!input.trim()) {
+      console.error("Error: No input provided via stdin");
+      Deno.exit(1);
+    }
+
+    const parser = new SerialParser();
+    const result = parser.parse(input);
+    console.log(JSON.stringify(result, null, 2));
+  });
 
 program
   .command('seen')
