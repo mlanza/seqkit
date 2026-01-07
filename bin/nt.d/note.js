@@ -159,7 +159,7 @@ function toInt(s) {
 }
 
 function getLogger(debug = false) {
-  return debug ? { log: console.log } : { log: () => {} };
+  return debug ? console : { log: () => null };
 }
 
 async function readStdin() {
