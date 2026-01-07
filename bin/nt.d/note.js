@@ -612,11 +612,11 @@ function tskGetPage(given, options){
 
 function page(options){
   const format = options.json ? 'json' : (options.format || 'md');
-  const headingLevel = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
+  const heading = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
   return function(given){
     return given ? tskNamed(given).
       chain(Task.juxt(Task.of, name => tskGetPage(name, options))).
-      map(fmtBody({format, heading: headingLevel})) : Task.of(null);
+      map(fmtBody({format, heading})) : Task.of(null);
   }
 }
 
@@ -1554,7 +1554,7 @@ program
   .arguments(demand("name|datestamp"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
-  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', '1')
+  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 2})
   .option('-a, --append <content:string>', 'Append content to page')
   .option('--nest', 'Use hierarchical nesting with format output')
   .option('-l, --less <patterns:string>', 'Less content matching regex patterns', { collect: true })
@@ -1647,7 +1647,7 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--desc', "With description")
   .option('--json', 'Output JSON format')
-  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', '1')
+  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 2})
   .action(pipeable(props));
 
 program
@@ -1655,9 +1655,9 @@ program
   .description('Add properties to page')
   .arguments(demand("name"))
   .option('--add <property:string>', 'Add property in format "key=value"', { collect: true })
-  .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
+  .option('-f, --format <type:string>', 'Output format (md|json)', {default: 'md'})
   .option('--json', 'Output JSON format')
-  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', '1')
+  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 2})
   .action(pipeable(prop));
 
 program
@@ -1665,7 +1665,7 @@ program
   .alias('s')
   .description('Search pages')
   .arguments(demand("term"))
-  .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
+  .option('-f, --format <type:string>', 'Output format (md|json)', {default: 'md'})
   .option('--json', 'Output JSON format')
   .action(pipeable(constantly(search)));
 
@@ -1674,7 +1674,7 @@ program
   .alias('n')
   .description('Get page name as cased from page ID or case-insensitive name.')
   .arguments(demand("id|name"))
-  .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
+  .option('-f, --format <type:string>', 'Output format (md|json)', {default: 'md'})
   .option('--json', 'Output JSON format')
   .example("Normalize to the actual casing of the page name via stdin", `echo "writing voice" | nt n`)
   .example("Normalize to the actual casing of the page name", `nt n "writing voice"`)
@@ -1698,8 +1698,8 @@ program
   .alias('b')
   .description('List pages that link to a given page')
   .arguments(demand("name"))
-  .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', 'none')
-  .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
+  .option('--limit <type:string>', 'Limit to N entries (omit for no limit)', {default: Infinity})
+  .option('-f, --format <type:string>', 'Output format (md|json)', {default: 'md'})
   .option('--json', 'Output JSON format')
   .action(pipeable(backlinks));
 
@@ -1708,8 +1708,8 @@ program
   .alias('q')
   .description('Run Datalog query')
   .arguments(demand("query"))
-  .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', 'none')
-  .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
+  .option('--limit <type:string>', 'Limit to N entries (omit for no limit)', {default: Infinity})
+  .option('-f, --format <type:string>', 'Output format (md|json)', {default: 'md'})
   .option('--json', 'Output JSON format')
   .action(pipeable(query));
 
@@ -1734,13 +1734,13 @@ program
 
 program
   .command('skills')
-  .description('List known skills');
+  .description('List skills and their descriptions');
 
 program
   .command('about')
   .alias('a')
   .arguments(demand("name..."))
-  .description('Retrieves information about a topic');
+  .description('Retrieves information about a topic including prequisites');
 
 program
   .command('serial')
@@ -1760,13 +1760,15 @@ program
 
 program
   .command('links')
-  .description('Extracts links')
-  .arguments(PIPED);
+  .description('Extracts links from content')
+  .arguments(PIPED)
+  .example("List links on a page", `nt page GenAI | nt links`);
 
 program
   .command('wikilinks')
-  .description('Extracts wikilinks')
-  .arguments(PIPED);
+  .description('Extracts wikilinks from content')
+  .arguments(PIPED)
+  .example("List wikilinks on a page", `nt page Boardgames | nt wikilinks`);
 
 program
   .command('wikify')
