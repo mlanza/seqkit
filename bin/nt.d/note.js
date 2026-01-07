@@ -4,7 +4,16 @@ import { TextLineStream } from "https://deno.land/std/streams/text_line_stream.t
 import { parse } from "jsr:@std/toml";
 import Task from "https://esm.sh/data.task";
 
-const NOTE_CONFIG = Deno.env.get("NOTE_CONFIG") ?? `${Deno.env.get("HOME")}/.config/nt/config.toml`;
+const isWindows = Deno.build.os === "windows";
+
+const orientSlashes = isWindows ? function (path) {
+  return path ? path.replaceAll("/", "\\") : null;
+} : function (path) {
+  return path ? path.replaceAll("\\", "/") : null;
+}
+
+const HOME = Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE");
+const NOTE_CONFIG = orientSlashes(Deno.env.get("NOTE_CONFIG") ?? `${HOME}/.config/nt/config.toml`);
 
 function tskConfig(path){
   function expandLogseq(logseq){
@@ -1722,6 +1731,11 @@ program
       .action(function(){
         this.showHelp();
       })
+      .command("file", new Command()
+        .description("Show config file path")
+        .action(function(){
+          console.log(NOTE_CONFIG);
+        }))
       .command("repo", new Command()
         .description("Show Logseq repo")
         .action(function(){
