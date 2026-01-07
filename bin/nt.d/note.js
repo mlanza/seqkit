@@ -1484,7 +1484,92 @@ program
       // Page doesn't exist, create it
       logger.log("Page doesn't exist, creating new page...");
 
-      const createResponse = await callLogseq('logseq.Editor.createPage', [pageName, {}]);
+      // Check if pageName is a datestamp (YYYY-MM-DD) for journal entry
+      const journalMatch = pageName.match(/(\d{4})-(\d{2})-(\d{2})/);
+      
+      let createResponse;
+      
+      if (journalMatch) {
+        // This is a journal page - create file manually
+        const journalsPath = `${config.logseq.repo}/journals/`;
+        const journalFileName = `${journalMatch[1]}_${journalMatch[2]}_${journalMatch[3]}.md`;
+        const journalFilePath = `${journalsPath}${journalFileName}`;
+        
+        logger.log(`Creating journal file at: ${journalFilePath}`);
+        
+        try {
+          // Create file with a minimal bogus block to help Logseq recognize it immediately
+          const initialContent = `- \n`;
+          await Deno.writeFile(journalFilePath, new TextEncoder().encode(initialContent), { createNew: true });
+          logger.log(`Created new journal file: ${journalFileName}`);
+          
+          // Get the day of the week for the new journal page
+          const journalDate = new Date(`${pageName}T00:00:00`);
+          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const dayOfWeek = dayNames[journalDate.getDay()];
+          const fullPageName = `${pageName} ${dayOfWeek}`;
+          
+          // Poll for UUID with timeout
+          const timeout = 7000; // 7 seconds
+          const pollInterval = 200; // 0.2 seconds
+          const maxAttempts = timeout / pollInterval;
+          
+          let uuidResult = null;
+          let attempts = 0;
+          
+          while (attempts < maxAttempts && !uuidResult) {
+            uuidResult = await callLogseq('logseq.DB.datascriptQuery', [
+              `[:find (pull ?p [*]) :where [?p :block/original-name "${fullPageName}"]]`
+            ]);
+            
+              if (uuidResult && uuidResult[0] && uuidResult[0][0] && uuidResult[0][0].uuid) {
+              break;
+            }
+            
+            uuidResult = null;
+            attempts++;
+            
+            if (attempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+          }
+          
+          if (uuidResult && uuidResult[0] && uuidResult[0][0] && uuidResult[0][0].uuid) {
+            createResponse = { uuid: uuidResult[0][0].uuid };
+            logger.log(`Retrieved UUID for journal page after ${attempts + 1} attempts: ${createResponse.uuid}`);
+          } else {
+            abort("Could not retrieve UUID for created journal page after timeout");
+          }
+          
+        } catch (error) {
+          if (error instanceof Deno.errors.AlreadyExists) {
+            logger.log(`Journal file already exists: ${journalFileName}`);
+            
+            // File exists, get the day of the week for the existing journal page
+            const journalDate = new Date(`${pageName}T00:00:00`);
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayOfWeek = dayNames[journalDate.getDay()];
+            const fullPageName = `${pageName} ${dayOfWeek}`;
+            
+            // File exists, get UUID by querying the database
+            const uuidResult = await callLogseq('logseq.DB.datascriptQuery', [
+              `[:find (pull ?p [*]) :where [?p :block/original-name "${fullPageName}"]]`
+            ]);
+            
+            if (uuidResult && uuidResult[0] && uuidResult[0][0] && uuidResult[0][0].uuid) {
+              createResponse = { uuid: uuidResult[0][0].uuid };
+              logger.log(`Retrieved UUID for existing journal page: ${createResponse.uuid}`);
+            } else {
+              abort("Could not retrieve UUID for existing journal page");
+            }
+          } else {
+            abort(`Error creating journal file: ${error.message}`);
+          }
+        }
+      } else {
+        // Regular page - use API
+        createResponse = await callLogseq('logseq.Editor.createPage', [pageName, {}]);
+      }
 
       if (createResponse && createResponse.uuid) {
         const pageUuid = createResponse.uuid;
