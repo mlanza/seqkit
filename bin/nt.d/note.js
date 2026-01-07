@@ -1527,7 +1527,7 @@ program
 
         try {
           // Create file with a minimal bogus block to help Logseq recognize it immediately
-          const initialContent = `- \n`;
+          const initialContent = `\n- TODO`;
           await Deno.writeFile(journalFilePath, new TextEncoder().encode(initialContent), { createNew: true });
           logger.log(`Created new journal file: ${journalFileName}`);
 
@@ -1538,9 +1538,9 @@ program
           const fullPageName = `${pageName} ${dayOfWeek}`;
 
           const uuidQuery = qry(`[:find (pull ?p [*]) :where [?p :block/original-name "${fullPageName}"]]`)
-            .map(result => result && result.length > 0 ? result[0][0] : null);
+            .map(result => result?.[0]?.[0]);
           const uuidResult = await promise(tskPolling(uuidQuery, 500, 7000));
-          
+
           if (uuidResult && uuidResult.uuid) {
             createResponse = { uuid: uuidResult.uuid };
             logger.log(`Retrieved UUID for journal page`);
