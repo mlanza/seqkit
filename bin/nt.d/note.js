@@ -567,8 +567,6 @@ function keeping(patterns, shorthand, hit = true){
 
 function tskGetPage(given, options){
   const format = options.json ? 'json' : (options.format || 'md');
-  const nest = options.nest || false;
-
   return given ? new Task(async function(reject, resolve){
     try {
       const patterns = options.agent || options.human ? config.agentignore : null;
@@ -583,7 +581,7 @@ function tskGetPage(given, options){
         return;
       }
 
-      if (format === 'md' && !nest && keep == null) {
+      if (format === 'md' && keep == null) {
         const found = await exists(path);
         if (!found) {
           resolve(null);
@@ -1556,7 +1554,6 @@ program
   .option('--json', 'Output JSON format')
   .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 1})
   .option('-a, --append <content:string>', 'Append content to page')
-  .option('--nest', 'Use hierarchical nesting with format output')
   .option('-l, --less <patterns:string>', 'Less content matching regex patterns', { collect: true })
   .option('-o, --only <patterns:string>', 'Only content matching regex patterns', { collect: true })
   .option('--agent', 'Hide content not intended for agents (see agentignore)')
@@ -1573,6 +1570,7 @@ program
   .example("Show agent-facing content per agentignore for tasks and links", `nt page Atomic --agent`)
   .example("Show human-facing content per agentignore for tasks and links", `nt page Atomic --human`)
   .example(`Find mention of "components" on a page`, `nt page Atomic | grep -C 3 components`)
+  .example(`Show journal page for select date, no heading`, `nt p --heading=0 2025-12-03`)
   .action(pipeable(page));
 
 program
@@ -1585,7 +1583,8 @@ program
   .example("Append content to current journal page", `echo "- Walked for 1h" | nt post`)
   .example("Append block to target page", `echo "- Egg sandwich" | nt post Diet`)
   .example("Replace target page", `echo "- Milk\\n- Bread\\n- Eggs" | nt post Groceries --overwrite`)
-  .example("Prepend block to target page", `echo "- Mom" | nt post Calls --prepend`);
+  .example("Prepend block to target page", `echo "- Mom" | nt post Calls --prepend`)
+  .example(`Copy a page`, `nt p --heading=0 "Recipe Template" | nt post Lasagna`);
 
 program
   .command('update')
@@ -1802,7 +1801,7 @@ program
           console.log(config.logseq.repo);
         }))
       .command("shorthand", new Command()
-        .description("Lists defined shorthand useful in place of tedious regexes in some commands")
+        .description("Lists defined shorthand for use over tedious regexes in some commands")
         .action(function(){
           Object.entries(config.shorthand).forEach(([key, value]) => console.log(key, " => ", value));
         }))
