@@ -665,25 +665,27 @@ const aka = comp(async function(results){
 
 function qryProps(prop, vals, mode = "any"){
   return new Task(function(reject, resolve){
-    if (!['any', 'all'].includes(mode)){
-      reject(new Error(`Mode must be "any" or "all" and was "${mode}".`));
+    try {
+      if (!['any', 'all'].includes(mode)){
+        throw new Error(`Mode must be "any" or "all" and was "${mode}".`);
+      }
+      if (vals.length === 0) {
+        throw new Error('At least one prop value is required');
+      }
+      const conditions = vals.map(val => `[(contains? ?prop "${val}")]`).join(' ');
+      const whereClause = mode === 'any' ? `(or ${conditions})` : conditions;
+      return qry(`[:find (pull ?page [:block/original-name])
+                    :where
+                    [?page :block/properties ?props]
+                    [(get ?props :${prop}) ?prop]
+                    ${whereClause}]`).
+        fork(reject, function(results){
+          const names = results.map(([item]) => item?.["original-name"]).filter(name => name);
+          resolve(names);
+        });
+    } catch (error) {
+      reject(error);
     }
-    if (vals.length === 0) {
-      reject(new Error('At least one prop value is required'));
-    }
-    const conditions = vals.map(val => `[(contains? ?prop "${val}")]`).join(' ');
-    const whereClause = mode === 'any' ? `(or ${conditions})` : conditions;
-    return qry(`[:find (pull ?page [:block/original-name])
-                  :where
-                  [?page :block/properties ?props]
-                  [(get ?props :${prop}) ?prop]
-                  ${whereClause}]`).
-      fork(reject, function(results){
-        const names = results.map(function([item]){
-          return item?.["original-name"];
-        }).filter(name => name);
-        resolve(names);
-      });
   })
 }
 
