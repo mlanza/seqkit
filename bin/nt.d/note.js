@@ -139,8 +139,7 @@ function juxt(...fns){
 Task.all = all;
 Task.juxt = juxt;
 
-function fmt(options){
-  const format = options.json ? 'json' : (options.format || 'md');
+function fmt({format}){
   return function(results){
     if (format === "json") {
       return results ? JSON.stringify(results, null, 2) : null;
@@ -565,8 +564,7 @@ function keeping(patterns, shorthand, hit = true){
   } : null
 }
 
-function tskGetPage(given, options){
-  const format = options.json ? 'json' : (options.format || 'md');
+function tskGetPage(given, {format}){
   return given ? new Task(async function(reject, resolve){
     try {
       const patterns = options.agent || options.human ? config.agentignore : null;
@@ -609,12 +607,10 @@ function tskGetPage(given, options){
 }
 
 function page(options){
-  const format = options.json ? 'json' : (options.format || 'md');
-  const heading = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
   return function(given){
     return given ? tskNamed(given).
       chain(Task.juxt(Task.of, name => tskGetPage(name, options))).
-      map(fmtBody({format, heading})) : Task.of(null);
+      map(fmtBody(options)) : Task.of(null);
   }
 }
 
@@ -771,12 +767,6 @@ function query(options){
   }
 }
 
-function normalizeOptions(options){
-  const format = options.json ? 'json' : (options.format || 'md');
-  const heading = options.heading !== false;
-  return {format, heading}
-}
-
 function qry(query, limit = Infinity){
   return new Task(function(reject, resolve){
     tskLogseq('logseq.DB.datascriptQuery', [query]).fork(reject, function(results){
@@ -794,33 +784,31 @@ function fmtProps({format}, propName = null){
     const pageData = results[0]?.[0] || null;
 
     if (format === 'json') {
-      if (pageData) {
-        return [name, results];
-      }
+      return [name, pageData ? results : null];
     } else if (format === 'md') {
-      return [name, propName ? pageData?.properties?.[propName] || null : Object.entries(pageData["properties-text-values"]).map(function([key, vals]){
+      const props = propName ? pageData?.properties?.[propName] || null : Object.entries(pageData?.["properties-text-values"] ?? {}).map(function([key, vals]){
         return `${key}:: ${vals}`;
-      })];
+      });
+      return [name, props.length? props : null];
     } else {
       throw new Error(`Unknown format: ${format}`);
     }
   }
 }
 
-function fmtBody({heading, format}){
+function fmtBody({heading, format, vacant}){
   return function([name, content]){
     if (format === 'json') {
       return [name, content];
     } else if (format === 'md') {
       const lines = [];
-      if (heading && name && content) {
-        const headingLevel = typeof heading === 'number' ? heading : 2;
-        lines.push(`${'#'.repeat(headingLevel)} ${name}`);
+      if (heading != null && name && (vacant || content)) {
+        lines.push(`${'#'.repeat(heading)} ${name}`.trim());
       }
       if (content) {
         typeof content == 'object' ? lines.push(...content) : lines.push(content);
       }
-      if (heading && name && content) {
+      if (heading != null && name && content) {
         lines.push("");
       }
       return lines;
@@ -829,19 +817,15 @@ function fmtBody({heading, format}){
 }
 
 function props(options){
-  const headingLevel = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
-  const format = options.json ? 'json' : options.format || "md";
-  return function(pageName, propName = null){
-    return pageName ? tskNamed(pageName).
+  return function(given, propName = null){
+    return given ? tskNamed(given).
       chain(Task.juxt(Task.of, qryPage)).
-      map(fmtProps({format, heading: headingLevel > 0}, propName)).
-      map(fmtBody({format, heading: headingLevel})) : Task.of(null);
+      map(fmtProps(options, propName)).
+      map(fmtBody(options)) : Task.of(null);
   }
 }
 
 function prop(options){
-  const headingLevel = options.heading === 0 ? 0 : Math.max(1, Math.min(5, parseInt(options.heading) || 1));
-  const format = options.json ? 'json' : options.format || "md";
   return function(pageName){
     return addPageProperties(pageName, options).map(function(name){
       if (format === 'json') {
@@ -852,7 +836,7 @@ function prop(options){
           return `${key}:: ${value}`;
         })];
       }
-    }).map(fmtBody({format, heading: headingLevel}));
+    }).map(fmtBody(options));
   }
 }
 
@@ -1553,6 +1537,7 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', {default: 'md'})
   .option('--json', 'Output JSON format')
   .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 1})
+  .option('--vacant', 'Include vacant entries')
   .option('-a, --append <content:string>', 'Append content to page')
   .option('-l, --less <patterns:string>', 'Less content matching regex patterns', { collect: true })
   .option('-o, --only <patterns:string>', 'Only content matching regex patterns', { collect: true })
@@ -1655,6 +1640,7 @@ program
   .option('--desc', "With description")
   .option('--json', 'Output JSON format')
   .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 1})
+  .option('--vacant', 'Include vacant entries')
   .action(pipeable(props));
 
 program
@@ -1665,6 +1651,7 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json)', {default: 'md'})
   .option('--json', 'Output JSON format')
   .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 1})
+  .option('--vacant', 'Include vacant entries')
   .action(pipeable(prop));
 
 program
@@ -1816,6 +1803,11 @@ if (import.meta.main) {
     program.showHelp();
     abort();
   } else {
-    await program.parse();
+    const args = Deno.args.flatMap(function(arg){
+      if (arg === '--json') return ['--format=json']
+      if (arg === '--md') return ['--format=md']
+      return [arg]
+    })
+    await program.parse(args);
   }
 }
