@@ -802,13 +802,14 @@ function fmtBody({heading, format, vacant}){
       return [name, content];
     } else if (format === 'md') {
       const lines = [];
-      if (heading != null && name && (vacant || content)) {
+      const furniture = heading != null && name && (vacant || content);
+      if (furniture) {
         lines.push(`${'#'.repeat(heading)} ${name}`.trim());
       }
       if (content) {
         typeof content == 'object' ? lines.push(...content) : lines.push(content);
       }
-      if (heading != null && name && content) {
+      if (furniture) {
         lines.push("");
       }
       return lines;
