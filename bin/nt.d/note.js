@@ -1351,6 +1351,9 @@ program
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
   .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', Infinity)
+  .example("List regular pages", "nt pages")
+  .example("List regular and journal pages", "nt pages -t all")
+  .example("List regular pages as json", "nt pages --json")
   .action(pipeable(function(options){
     return function(){
       return tskGetAllPages(options);

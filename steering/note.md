@@ -66,9 +66,11 @@ nt pages [-f|--format <format>] [--json]
 
 **Examples**:
 ```bash
-nt pages                        # List pages as names
+nt pages                        # List regular pages as names
+nt pages -t regular             # List regular pages as names
 nt pages --json                 # List pages as JSON
 nt pages -f json                # Same as above
+nt pages -t all                 # List all journals and regular pages
 nt pages -t journal             # List all journals
 nt pages -t journal --limit 3   # List last 3 journals
 ```
@@ -90,7 +92,6 @@ nt page [name] [-f|--format <format>] [--json] [--heading=n] [--less <patterns..
 - `--json`: Shortcut for `--format json`
 - `--heading`: Set heading level or omit (0) altogether
 - `--less <patterns...>`: Filter out blocks matching regex patterns (outline format only, supports multiple patterns)
-- `-a, --append <content>`: Append content to page (mutually exclusive with content display)
 
 **Behavior**:
 
