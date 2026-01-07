@@ -984,10 +984,14 @@ function demand(...whats){
   return /*isPiped ?*/ whats.map(what => `[${what}]`).join(' ') /*: whats.map(what => `<${what}>`).join(' ')*/;
 }
 
-function tskGetAllPages(type){
-  return tskLogseq('logseq.Editor.getAllPages').map(function(results){
-    return type == 'all' ? results : type == "journal" ? results.filter(item => !!item["journal?"]) : results.filter(item => !item["journal?"]);
-  }).map(results => results.map(page => page?.originalName));
+function tskGetAllPages({type = "regular", limit = Infinity} = {}){
+  const filters = {"journal": item => !!item["journal?"], "regular": item => !item["journal?"]}
+  const f = filters[type];
+  const filter = f ? results => results.filter(f) : results => results;
+  return tskLogseq('logseq.Editor.getAllPages')
+    .map(filter)
+    .map(results => results.map(page => page?.originalName))
+    .map(results => take(results, limit));
 }
 
 class SerialParser {
@@ -1346,9 +1350,10 @@ program
   .option('-t, --type <type:string>', 'Page type (regular|journal|all)', 'regular')
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
+  .option('--limit <type:string>', 'Limit to N entries (none = no limit) (default: "none")', Infinity)
   .action(pipeable(function(options){
     return function(){
-      return tskGetAllPages(options.type || "regular");
+      return tskGetAllPages(options);
     }
   }));
 

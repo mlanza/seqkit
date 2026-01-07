@@ -10,7 +10,6 @@
 ### Key Methods for Journal Operations
 - `logseq.Editor.getAllPages()` - Returns all pages with journal filtering capability
 - `logseq.Editor.getPage(name)` - Retrieves specific page content
-- `logseq.Editor.createJournalPage(date)` - Creates new journal entries
 - `logseq.Editor.getPageBlocksTree(name)` - Gets page content as block tree
 
 ### Journal Page Identification
@@ -22,7 +21,7 @@ Journal pages can be identified by these PageEntity properties:
 
 ## Overview
 
-`nt` is a Logseq HTTP API CLI tool that provides command-line access to Logseq functionality. It follows Unix philosophy principles with silent success, explicit error handling, and composable commands.
+`nt` is a CLI tool that provides command-line access to Logseq functionality via Logseq HTTP API. It follows Unix philosophy principles with silent success, explicit error handling, and composable commands.
 
 ## Design Philosophy
 
@@ -34,7 +33,7 @@ Journal pages can be identified by these PageEntity properties:
 - **Text-based**: Default output is human-readable text, JSON available for automation
 
 ### Error Handling
-- All errors are printed to stderr with "Error:" prefix
+- All errors are printed to stderr
 - Script exits with status code 1 on errors
 - Warnings are prefixed with "Warning:" and don't cause exit
 - Missing pages or data often results in silent no-output (not an error)
@@ -42,7 +41,7 @@ Journal pages can be identified by these PageEntity properties:
 ### Integration Patterns
 - Uses `callLogseq()` function for all Logseq API interactions
 - Environment variables for configuration: `LOGSEQ_TOKEN`
-- Standard HTTP endpoint: `http://127.0.0.1:12315/api`
+- Standard HTTP endpoint: `http://127.0.0.1:12315/api` override in `config.logseq.endpoint`
 
 ## Commands
 
@@ -104,7 +103,7 @@ nt journals --limit none     # List all journals with no limit
 
 **Syntax**:
 ```bash
-nt page [name] [-f|--format <format>] [--json] [--no-heading] [--less <patterns...>] [-a|--append <content>]
+nt page [name] [-f|--format <format>] [--json] [--heading=n] [--less <patterns...>] [-a|--append <content>]
 ```
 
 **Arguments**:
@@ -113,7 +112,7 @@ nt page [name] [-f|--format <format>] [--json] [--no-heading] [--less <patterns.
 **Options**:
 - `-f, --format <type>`: Output format, "md", "json", or "outline" (default: "md")
 - `--json`: Shortcut for `--format json`
-- `--no-heading`: Omit H1 heading and trailing blank line in MD format
+- `--heading`: Set heading level or omit (0) altogether
 - `--less <patterns...>`: Filter out blocks matching regex patterns (outline format only, supports multiple patterns)
 - `-a, --append <content>`: Append content to page (mutually exclusive with content display)
 
@@ -122,8 +121,8 @@ nt page [name] [-f|--format <format>] [--json] [--no-heading] [--less <patterns.
 **Content Display Mode** (default):
 - Single page: Displays content for specified page
 - Stdin mode: Reads page names from stdin, one per line, processes each
-- MD format: Reads from filesystem using `LOGSEQ_REPO/pages/{name}.md`
-  - Adds H1 heading (`# {name}`) and trailing blank line unless `--no-heading` specified
+- MD format: Reads from filesystem using `${config.logseq.repo}/pages/{name}.md`
+  - Adds H1 heading (`# {name}`) and trailing blank line unless `--heading=0` specified
   - Trims trailing blank lines from content
   - Adds blank line separator between multiple pages
   - Shows warning if file cannot be read but continues processing
@@ -143,7 +142,7 @@ nt page [name] [-f|--format <format>] [--json] [--no-heading] [--less <patterns.
 **Examples**:
 ```bash
 nt page MyPage                     # Show page content with heading
-nt page MyPage --no-heading        # Show content without heading
+nt page MyPage --heading=0         # Show content without heading
 nt page MyPage --json              # Show as JSON block tree
 nt page MyPage --nest --json       # Show as hierarchical JSON outline
 echo -e "Page1\nPage2" | nt page   # Process multiple pages from stdin
@@ -233,7 +232,7 @@ nt page MyPage --nest --less '^https?://[^)]+$' '^\[.*\]\(https?://[^)]+\)$'
 
 **Syntax**:
 ```bash
-nt journal [date] [-f|--format <format>] [--json] [--no-heading] [-a|--append <content>]
+nt journal [date] [-f|--format <format>] [--json] [--heading=n] [-a|--append <content>]
 ```
 
 **Arguments**:
@@ -247,14 +246,14 @@ nt journal [date] [-f|--format <format>] [--json] [--no-heading] [-a|--append <c
 **Options**:
 - `-f, --format <type>`: Output format, "md" or "json" (default: "md")
 - `--json`: Shortcut for `--format json`
-- `--no-heading`: Omit H1 heading and trailing blank line in MD format
+- `--heading`: Specify heading level or omit (0) altogether
 - `-a, --append <content>`: Append content to journal (mutually exclusive with content display)
 
 **Behavior**:
 - **Content Display Mode** (default):
   - Single date: Displays content for specified journal. If no date provided, defaults to today (0)
   - Stdin mode: Reads dates from stdin, one per line, processes each (only when no arguments provided)
-  - MD format: Reads from filesystem using `LOGSEQ_REPO/pages/{journal-name}.md`
+  - MD format: Reads from filesystem using `${config.logseq.repo}/pages/{journal-name}.md`
   - JSON format: Uses `logseq.Editor.getPageBlocksTree` API
   - Integer inputs are automatically detected as day offsets from today
 - **Append Mode** (`--append`):
@@ -273,12 +272,6 @@ nt day 1 | nt p                      # Show tomorrow's journal
 nt p --heading=0 2025-12-03 # Show without H1 heading
 nt day 0 | nt p --json               # Show today's journal as JSON
 echo "- New entry" | nt journal -a          # Append to today's journal (silent, default)
-nt journal 0 -a "New entry"       # Append to today's journal (preferred order)
-nt journal 2025-12-14 -a "New entry" # Append to specific date (preferred order)
-nt journal -5 -a "New entry"      # Append to 5 days ago (preferred order)
-nt journal 1 -a "New entry"       # Append to tomorrow's journal (preferred order)
-nt journal -a "New entry" 2025-12-14 # Append to specific date (legacy order supported)
-echo -e "2025-12-03\n2025-12-02" | nt journal  # Process multiple dates from stdin
 ```
 
 ### search - Search Pages
@@ -317,7 +310,7 @@ nt search "term" --json       # Raw search results as JSON
 
 **Syntax**:
 ```bash
-nt props <name> [property] [-f|--format <format>] [--json] [--no-heading]
+nt props <name> [property] [-f|--format <format>] [--json] [--heading=n]
 ```
 
 **Arguments**:
@@ -327,7 +320,7 @@ nt props <name> [property] [-f|--format <format>] [--json] [--no-heading]
 **Options**:
 - `-f, --format <type>`: Output format, "md" or "json" (default: "md")
 - `--json`: Shortcut for `--format json`
-- `--no-heading`: Omit H1 heading and trailing blank line for MD format
+- `--heading`: Specify heading level or omit (0) altogether.
 
 **Behavior**:
 - Uses `logseq.DB.datascriptQuery` for efficient database queries
@@ -339,7 +332,7 @@ nt props <name> [property] [-f|--format <format>] [--json] [--no-heading]
 - **All properties**: Outputs as `property:: [[value1]], [[value2]]` format with H1 heading
 - **Single property**: Outputs just the property values, one per line (no brackets)
 - Includes proper wikilink formatting with double brackets
-- Can omit heading with `--no-heading`
+- Can omit heading with `--heading=0`
 
 **JSON Format**:
 - Outputs full query result as pretty-printed JSON
@@ -365,7 +358,7 @@ nt props MyPage tags
 nt props MyPage tags --json
 
 # Options
-nt props MyPage --no-heading
+nt props MyPage --heading=0
 nt props MyPage --format md
 nt props MyPage --format json
 
@@ -552,9 +545,9 @@ nt tagged <tag> [-f|--format <format>] [--json]
 
 **Examples**:
 ```bash
-nt tagged Skills                # Find pages with Skills tag
-nt tagged "AI" --json         # Raw JSON output of AI-tagged pages
-echo -e "Skills\nAI" | nt tagged  # Search multiple tags
+nt tags Skills                # Find pages with Skills tag
+nt tags "AI" --json         # Raw JSON output of AI-tagged pages
+echo -e "Skills\nAI" | nt tags  # Search multiple tags
 ```
 
 ## Tested Datalog Query Examples
@@ -668,7 +661,7 @@ Warning: <descriptive message>
 
 #### `getPagePathFromName(name)`
 - Converts page name to filesystem path
-- Pattern: `${LOGSEQ_REPO}/pages/${name}.md`
+- Pattern: `${config.logseq.repo}/pages/${name}.md`
 - Basic trimming and normalization
 
 #### `extractPrerequisites(content)`
@@ -697,7 +690,7 @@ Warning: <descriptive message>
 ### Pipeline Integration
 ```bash
 # Find pages and process them
-nt search "topic" | nt page --no-heading
+nt search "topic" | nt page --heading=0
 
 # Get prerequisites and check properties
 nt prereq "ComplexTopic" | xargs -I {} nt props {}
@@ -707,10 +700,10 @@ nt pages | nt props
 echo "Page1\nPage2" | nt props --format json
 
 # Export all pages
-nt pages | nt page --no-heading > all-pages.md
+nt pages | nt page --heading=0 > all-pages.md
 
 # Find pages by alias and process them
-nt alias "my-alias" | xargs -I {} nt page --no-heading
+nt alias "my-alias" | xargs -I {} nt page --heading=0
 ```
 
 ### Automation
