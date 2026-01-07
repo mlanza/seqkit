@@ -1561,8 +1561,9 @@ program
   .option('-o, --only <patterns:string>', 'Only content matching regex patterns', { collect: true })
   .option('--agent', 'Hide what an agent must not see per agentignore config')
   .option('--human', 'Show what only a human must see per agentignore config')
-  .example("List all wikilinks on a page", "nt page Mission | nt wikilinks")
-  .example("List all wikilinked pages", "nt page Mission | nt wikilinks | nt page")
+  .example("List wikilinks on a page", "nt page Mission | nt wikilinks")
+  .example("Show content for wikilinked pages", "nt page Mission | nt wikilinks | nt page")
+  .example("Show content for select pages", `nt list Atomic "Clojure Way" | nt page`)
   .example(`Find mention of "components" on a page`, `nt page Atomic | grep -C 3 components`)
   .action(pipeable(page));
 
@@ -1572,7 +1573,11 @@ program
   .arguments("[name]")
   .option('--prepend', 'Prepend content instead')
   .option('--overwrite', 'Purges any existing page content (not properties)')
-  .option('--debug', 'Enable debug output');
+  .option('--debug', 'Enable debug output')
+  .example("Append content to current journal page", `echo "- Walked for 1h" | nt post`)
+  .example("Append block to target page", `echo "- Egg sandwich" | nt post Diet`)
+  .example("Replace target page", `echo "- Milk\\n- Bread\\n- Eggs" | nt post Groceries --overwrite`)
+  .example("Prepend block to target page", `echo "- Mom" | nt post Calls --prepend`);
 
 program
   .command('update')
@@ -1631,7 +1636,7 @@ program
   .description('The path to the page file')
   .arguments(demand("name"))
   .example("Display the file system path to the page", `nt path "Article Ideas"`)
-  .example(`Open "About Me" page for editing in VS Code`, `nt path "About Me" | xargs code`)
+  .example(`Open Moussaka page for editing in VS Code`, `nt path Moussaka | xargs code`)
   .example("Undoing recent changes, human or agent, to select page", "nt path Moussaka | xargs git restore")
   .action(pipeable(path));
 
@@ -1667,7 +1672,7 @@ program
 program
   .command('name')
   .alias('n')
-  .description('Get page name as actually cased from page ID or case insensitive name.  Operations generally want correctly-cased names.')
+  .description('Get page name as cased from page ID or case-insensitive name.')
   .arguments(demand("id|name"))
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', 'md')
   .option('--json', 'Output JSON format')
@@ -1719,7 +1724,13 @@ program
   .command('day')
   .alias('d')
   .arguments("[offset...]")
-  .description('List one or more days');
+  .description('List one or more days')
+  .example(`Show today's journal page`, `nt day | nt page`)
+  .example(`Show yesterday's journal page`, `nt day -1 | nt page`)
+  .example(`Show tomorrows's journal page`, `nt day 1 | nt page`)
+  .example(`Show yesterday's, today's, and tomorrow's journal page`, `nt day -1 0 1 | nt page`)
+  .example(`Review 90 days of journal entries in zsh`, `nt day $(seq 0 -90) | nt page`)
+  .example(`Review 90 days of journal entries in pwsh`, `nt day (0..-90) | nt page`)
 
 program
   .command('skills')

@@ -38,32 +38,12 @@ $ nt about Coding
 
 Sample tools calls:
 
-* `nt pages` - list regular pages
-* `nt pages -t journal` - list journal pages
-* `nt pages -t all` - list both journal and regular pages
-* `nt page Atomic | nt wikilinks` - to view wikilinks on a page
-* `nt page Atomic | nt wikilinks | nt page` - list all wikilinked pages
 * `nt page Atomic | nt links` - to view links on page
-* `nt page Atomic` - list a particular page by name
-* `nt tags Programming` - list notes tagged Programming
-* `nt name programming | nt t` - normalize the name and find pages tagged Programming
-* `nt tags Programming | nt page` - pipe names into page to list content for a bunch of pages
-* `nt page Atomic | grep -C 3 components` - use `grep` as usual
-* `nt path Atomic | xargs code` - open page in VS Code, nvim, etc.
-* `echo "My thoughts" | nt post Atomic` - writing a page
-* `echo "My thoughts" | nt post Atomic --overwrite` - overwriting an existing page
-* `nt path Atomic | xargs git restore` - undoing a mistaken overwrite
-* `echo "Atomic\nClojure Way" | nt tags` - tags on these pages
-* `nt list Atomic "Clojure Way" | nt page` -- display several pages
 * `nt list Coding Tasking Decomposing | nt prereq | nt seen | nt page` - several concepts and their unique prerequisites
-* `nt day | nt page` - today's journal page
-* `nt day -1 | nt page` - yesterday's journal page
-* `nt day $(seq 0 -90) | nt page` - to review 90 days of journal entries
 * `nt day $(seq 0 -30) | nt page | nt links` - links from latest journal entries
 * `nt day $(seq 0 -30) | nt page --only tasks` - to display only TODOs
 * `nt day $(seq 0 -30) | nt page --less tasks` - to display everything but TODOs
-* `nt day $(seq 0 -30) | nt page` - a range of journal entries (`zsh`)
-* `nt day (0..-30) | nt page` - a range of journal entries (`pwsh`)
+
 
 These can be issued directly in [OpenCode](https://opencode.ai), Gemini, Claude, etc.  — by you or by any agent with with [computer use](https://www.anthropic.com/news/3-5-models-and-computer-use).
 
