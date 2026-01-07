@@ -68,7 +68,7 @@ function println(lines){
 
 function abort(error){
   error && console.error(error);
-  Deno.exit(1);
+  Deno.exit(error ? 1 : 0);
 }
 
 const config = await loadConfig(NOTE_CONFIG).catch(abort);
