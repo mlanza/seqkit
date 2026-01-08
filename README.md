@@ -60,12 +60,90 @@ export PATH=~/Documents/nt/bin:$PATH
 
 Set these environment variables:
 
-* **LOGSEQ_REPO** - the path to your Logseq notes repo, e.g. `~/Documents/notes`
-* **LOGSEQ_ENDPOINT** - the HTTP API endpoint, e.g. http://127.0.0.1:12315/api
 * **LOGSEQ_TOKEN** - a token you configured for the HTTP API
 * **NOTE_CONFIG** - path to config file (default is `~/.config/nt/config.toml`)
 
-A few entries worth setting up:
+With the actual config at minimum:
+
+```toml
+# config.toml
+[logseq]
+"repo" = "D:\\notes" # Windows
+"endpoint" = "http://127.0.0.1:12315/api"
+```
+
+The `endpoint` can be omitted assuming you use the default already listed above.
+
+Once done, start Logseq, start your shell and issue a few commands.
+
+## Going Deeper
+
+### Generating `AGENTS.md`
+
+While technically possible to give the agent a minimal `AGENTS.md` and ask it to lookup the most crucial instructions outright, that's just slow.  Although the content will be redundant (in Logseq and in your filesystem), it's more expedient to bootstrap your agent from a file written to your project or to the designated place used by your preferred agentic runtime.
+
+The following assumes the target page `prerequisites` is replete with your most critical items.  The `document` tool slightly flattens Logseq's outline formatting.
+
+```zsh
+nt about "Agent Instructions" | nt document --para | cat -s
+```
+
+### Agent Content Filtering
+
+Because I use Logseq for both [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done), my pages have mixed content.  I may have a smattering of links to interestings sites and/or a pile of tasks in various stages pertinent to the page topic or project.  I may also have information and/or instructions.  What I'm getting at is some of the stuff on a page is useful to me alone, while other stuff is more generally useful to a third party like an agent.
+
+This is not about sensitive content as I don't keep that in my stores.  The concern is not leaks, but wasted or confusing context.  To help the `nt page` command has options to exclude certain blocks (along with the child content).
+
+This command filters out task blocks:
+
+```zsh
+nt page Atomic --less '^(TODO|DOING|DONE|WAITING|NOW|LATER)'
+```
+
+While, conversely, this one shows only task blocks:
+
+```zsh
+nt page Atomic --only '^(TODO|DOING|DONE|WAITING|NOW|LATER)'
+```
+
+You can send in multiple values:
+
+```zsh
+nt page Atomic --less '^https?://[^)]+$' --less '^[.*](https?://[^)]+)$'
+```
+
+But typing that will get tedious fast.  Better to define them in an `agentignore` table in your config.
+
+```toml
+agentignore = [
+  '^(TODO|DOING|DONE|WAITING|NOW|LATER)',
+  '^https?://[^)]+$',
+  '^[.*](https?://[^)]+)$'
+]
+
+```
+
+Having that, you call the following to omit those blocks:
+```zsh
+nt page Atomic --agent
+```
+
+Or the following to get only those blocks:
+```zsh
+nt page Atomic --human
+```
+
+As good practice, keep the `agentignore` table at the very top of the config. If it appears under another table it'll disappear.
+
+The `about` subcommand filters out blocks which are themselves either links or TODOs.  This is because of how I keep notes, combining [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done) content in one spot.  This includes loose links — related posts and products or content to be examined.  TODOs are real work, half-baked ideas, or maybe links marked as future reading.  That's all noise to an agent which is why it gets filtered out.  Links which are embedded in statements as hyperlinks are kept.
+
+
+
+
+### Advanced Configurations
+
+Certain commands take values which can be tedious to type.  Look at the `shorthand` mappings below.  That's what shorthand is for.  It lets you type the abbreviated name instead of the full string expression.  This can be a useful alternative to hand-entering common regexes and Datalog queries.
+
 
 ```toml
 # config.toml
@@ -91,19 +169,6 @@ agentignore = [
 """
 ```
 
-Once done, start Logseq, start your shell and issue a few commands.
-
-## Going Deeper
-
-### Generating `AGENTS.md`
-
-While technically possible to give the agent a minimal `AGENTS.md` and ask it to lookup the most crucial instructions outright, that's just slow.  Although the content will be redundant (in Logseq and in your filesystem), it's more expedient to bootstrap your agent from a file written to your project or to the designated place used by your preferred agentic runtime.
-
-The following assumes the target page `prerequisites` is replete with your most critical items.  The `document` tool slightly flattens Logseq's outline formatting.
-
-```zsh
-nt about "Agent Instructions" | nt document --para | cat -s
-```
 
 ### `about` Design Rationale
 
