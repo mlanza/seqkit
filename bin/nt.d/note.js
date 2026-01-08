@@ -73,8 +73,11 @@ function abort(error){
 
 const config = await loadConfig(NOTE_CONFIG).catch(abort);
 
-const take = (xs, n = Infinity) =>
-  Array.isArray(xs) ? xs.slice(0, n) : [];
+function take(n){
+  return function(xs){
+    return xs.slice(0, n);
+  }
+}
 
 function all (tasks) {
   if (!Array.isArray(tasks) || tasks.length === 0) {
@@ -238,7 +241,7 @@ function getFilePath(day, name){
 function tskGetJournalPage(datestamp){
   return new Task(function(reject, resolve){
     const arg = datestamp.split(' ')?.[0].replaceAll("-", "");
-    qry(`[:find (pull ?p [*]) :where [?p :block/journal-day ${arg}]]`).fork(reject, function(result){
+    qry([`[:find (pull ?p [*]) :where [?p :block/journal-day ${arg}]]`]).fork(reject, function(result){
       const obj = result?.[0]?.[0] || {};
       resolve(obj["journal?"] ? obj["original-name"] : null);
     });
@@ -307,7 +310,7 @@ const callLogseq = comp(promise, tskLogseq);
 
 function qryPrerequisites(name){
   return new Task(function(reject, resolve){
-    qry(`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`).fork(reject, function(results){
+    qry([`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`]).fork(reject, function(results){
       resolve(results?.[0]?.[0]?.properties?.prerequisites || []);
     });
   });
@@ -689,11 +692,11 @@ function qryProps(prop, vals, mode = "any"){
       }
       const conditions = vals.map(val => `[(contains? ?prop "${val}")]`).join(' ');
       const whereClause = mode === 'any' ? `(or ${conditions})` : conditions;
-      return qry(`[:find (pull ?page [:block/original-name])
+      return qry([`[:find (pull ?page [:block/original-name])
                     :where
                     [?page :block/properties ?props]
                     [(get ?props :${prop}) ?prop]
-                    ${whereClause}]`).
+                    ${whereClause}]`]).
         fork(reject, function(results){
           const names = results.map(([item]) => item?.["original-name"]).filter(name => name);
           resolve(names);
@@ -724,7 +727,7 @@ function qryBacklinks(name, limit = Infinity){
         throw new Error('Page name is required');
       }
 
-      const items = await promise(qry(`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${name.toLowerCase()}"]]`, limit));
+      const items = await promise(qry([`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${name.toLowerCase()}"]]`], limit));
 
       const pageIds = new Set()
       items?.forEach(item => {
@@ -765,20 +768,18 @@ function backlinks(options){
 function query(options){
   const limit = options.limit ? parseInt(options.limit) : Infinity;
   return function(query){
-    return qry(query, limit);
+    return qry([query]).map(take(limit));
   }
 }
 
-function qry(query, limit = Infinity){
+function qry(args){
   return new Task(function(reject, resolve){
-    tskLogseq('logseq.DB.datascriptQuery', [query]).fork(reject, function(results){
-      resolve(take(results, limit));
-    });
+    tskLogseq('logseq.DB.datascriptQuery', args).fork(reject, resolve);
   });
 }
 
 function qryPage(name){
-  return qry(`[:find (pull ?p [*]) :where [?p :block/original-name "${name}"]]`);
+  return qry([`[:find (pull ?p [*]) :where [?p :block/original-name "${name}"]]`]);
 }
 
 function fmtProps({format}, propName = null){
@@ -976,7 +977,7 @@ function tskGetAllPages({type = "regular", limit = Infinity} = {}){
   return tskLogseq('logseq.Editor.getAllPages')
     .map(filter)
     .map(results => results.map(page => page?.originalName))
-    .map(results => take(results, limit));
+    .map(take(limit));
 }
 
 class SerialParser {
