@@ -1812,7 +1812,7 @@ program
           console.log(config.logseq.repo);
         }))
       .command("filter", new Command()
-        .description("Lists defined filters used altogether by --agent and --human `page` options")
+        .description("Lists defined filters used in total by --agent and --human `page` options")
         .action(function(){
           Object.entries(config.filter ?? {}).forEach(([key, value]) => console.log(key, " => ", value));
         }))
