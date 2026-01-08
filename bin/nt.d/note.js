@@ -767,7 +767,8 @@ function backlinks(options){
 
 function query(options){
   const limit = options.limit ? (typeof options.limit == "string" ? parseInt(options.limit) : options.limit) : Infinity;
-  return function(query, ...args){
+  return function(q, ...args){
+    const query = config?.shorthand?.[q] || q;
     //console.log({limit, options, query, args});
     return qry(query, ...args); //.map(take(limit));
   }

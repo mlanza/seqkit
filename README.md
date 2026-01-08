@@ -78,6 +78,17 @@ agentignore = [
 "props" = "^[^\\s:]+::"
 "tasks" = "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)"
 "links" = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+\"[^\"\\r\\n]*\")?\\s*\\))\\s*$"
+"sched" = """
+[:find (pull ?b [*])
+:in $ ?start ?end
+:where
+[?b :block/content ?blockcontent]
+[?b :block/page ?page]
+[?page :block/name ?name]
+[?b :block/scheduled ?scheduled]
+[(>= ?scheduled ?start)]
+[(<= ?scheduled ?end)]]
+"""
 ```
 
 Once done, start Logseq, start your shell and issue a few commands.
