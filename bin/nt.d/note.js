@@ -257,7 +257,6 @@ function tskIdentify(given){
       const day = journal ? parseInt(journal[1] + journal[2] + journal[3]) : await journalDay(name);
       const path = name ? getFilePath(day, name) : null;
       const identifiers = {given, day, normalized, name, path};
-      //console.log({identifiers});
       resolve(identifiers);
 
     } catch (ex) {
