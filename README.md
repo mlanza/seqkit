@@ -116,6 +116,11 @@ Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) sp
 ```zsh
 $ nt q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
 ```
+These links about advanced queries may help:
+
+* https://adxsoft.github.io/logseqadvancedquerybuilder/
+
+Not all Datalog queries are supported by the HTTP API.
 
 ### Ergonomics
 
