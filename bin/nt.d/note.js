@@ -795,8 +795,9 @@ function qry(query, ...args){
     const q = args.reduce(function(q, value, idx){
       return q.replaceAll(`$${idx + 1}`, value);
     }, query);
-    const replacements = query.indexOf("$1") !== -1;
-    tskLogseq('logseq.DB.datascriptQuery', replacements ? [q] : [q, ...args]).fork(reject, resolve);
+    const params = query.indexOf("$1") !== -1;
+    //console.log({q, args, params})
+    tskLogseq('logseq.DB.datascriptQuery', params ? [q] : [q, ...args]).fork(reject, resolve);
   });
 }
 
