@@ -61,8 +61,8 @@ Within the actual config, at minimum set:
 ```toml
 # config.toml
 [logseq]
-"repo" = 'D:\notes'
-"endpoint" = 'http://127.0.0.1:12315/api'
+repo = 'D:\notes'
+endpoint = 'http://127.0.0.1:12315/api'
 ```
 
 The `endpoint` can be omitted assuming you haven't changed its default.
@@ -113,9 +113,9 @@ But typing that will get tedious fast.  Better to define a `filter` table in you
 
 ```toml
 [filter]
-"props" = "^[^\\s:]+::"
-"tasks" = "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)"
-"links" = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+\"[^\"\\r\\n]*\")?\\s*\\))\\s*$"
+props = "^[^\\s:]+::"
+tasks = "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)"
+links = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+\"[^\"\\r\\n]*\")?\\s*\\))\\s*$"
 ```
 
 Having that you can exclude one type of block:
