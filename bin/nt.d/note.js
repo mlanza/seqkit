@@ -770,7 +770,7 @@ function query(options){
   return function(q, ...args){
     const query = config?.shorthand?.[q] || q;
     //console.log({limit, options, query, args});
-    return qry(query, ...args); //.map(take(limit));
+    return qry(query, ...args).map(take(limit));
   }
 }
 
