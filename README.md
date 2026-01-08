@@ -65,7 +65,7 @@ Set these environment variables:
 * **LOGSEQ_TOKEN** - a token you configured for the HTTP API
 * **NOTE_CONFIG** - path to config file (default is `~/.config/nt/config.toml`)
 
-With the actual config at minimum:
+Within the actual config, at minimum set:
 
 ```toml
 # config.toml
@@ -74,9 +74,13 @@ With the actual config at minimum:
 "endpoint" = "http://127.0.0.1:12315/api"
 ```
 
-The `endpoint` can be omitted assuming you use the default already listed above.
+The `endpoint` can be omitted assuming you haven't changed its default.
 
 Once done, start Logseq, start your shell and issue a few commands.
+
+```zsh
+nt page Atomic # show some page, for example
+```
 
 ## Going Deeper
 
@@ -152,11 +156,12 @@ It's a reason to prefer Logseq to Obsidian.
 ```zsh
 $ nt q '[:find (pull ?p [*]) :where [?p :block/original-name "$1"]]' Atomic
 ```
+
+Any quirks around whether a query runs come from the HTTP API’s implementation, not from `nt` itself. If you’re testing what the API does or doesn’t support, call it directly with `curl`.
+
 These links about advanced queries may help:
 
 * https://adxsoft.github.io/logseqadvancedquerybuilder/
-
-Not all Datalog queries are supported by the HTTP API.
 
 ## License
 [MIT](./LICENSE.md)
