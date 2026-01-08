@@ -27,15 +27,19 @@ class Guidance extends Error {
   }
 }
 
+function explain(message, cause){
+  return cause instanceof Guidance ? cause : new Error(message, {cause});
+}
+
 function tskConfig(path){
   function expandLogseq(logseq){
     const token = Deno.env.get('LOGSEQ_TOKEN') || null;
     if (!token) {
-      throw new Error("LOGSEQ_TOKEN environment var must be set.");
+      throw new Guidance("LOGSEQ_TOKEN environment var must be set.");
     }
     const repo = logseq?.repo?.replace("~", HOME);
     if (!repo) {
-      throw new Guidance("Logseq repo must be set.");
+      throw new Guidance(`Logseq repo must be set in config at ${path}.`);
     }
     const endpoint = "http://127.0.0.1:12315/api";
     return {endpoint, token, ...logseq, repo};
@@ -44,19 +48,18 @@ function tskConfig(path){
     try {
       const existing = await exists(path);
       if (!existing) {
-        reject(new Guidance(`Note config not present at ${path}.`));
-        return;
+        throw new Guidance(`Note config not present at ${path}.`);
       }
       const text = await Deno.readTextFile(existing);
       const cfg = parse(text);
 
-      const logseq = expandLogseq(cfg.logseq ?? {});
+      const logseq = expandLogseq(cfg?.logseq ?? {});
       const shorthand = cfg.shorthand ?? {};
       const agentignore = cfg.agentignore ?? [];
 
       resolve({ logseq, shorthand, agentignore });
     } catch (cause) {
-      reject(new Error(`Problem reading config at ${path}.`, {cause}));
+      reject(explain(`Problem reading config at ${path}.`, cause));
     }
   });
 }
