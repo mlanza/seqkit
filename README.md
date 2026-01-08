@@ -19,7 +19,7 @@ $ nt props Coding
 ```
 
 ```md
-## Coding
+# Coding
 tags:: AI, [[Making apps]], Skills
 alias:: [[Agentic Coding]], [[Spec Coding]], [[Vibe Coding]]
 prerequisites:: [[Clojure Way]], [[Coding Style]]
