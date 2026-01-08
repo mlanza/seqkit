@@ -120,15 +120,15 @@ links = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)
 
 Having that, you can exclude one type of block:
 ```zsh
-nt page Atomic --less props
+nt page Atomic --less tasks
 ```
 
 Or include one type of block:
 ```zsh
-nt page Atomic --only props
+nt page Atomic --only tasks
 ```
 
-Some of the examples in the tool `--help` anticpate these defintions.
+Some of the examples in the tool `--help` anticipate these defintions.
 
 This command includes only the filtered blocks (as per all filters):
 ```zsh
