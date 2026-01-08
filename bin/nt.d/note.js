@@ -257,7 +257,7 @@ function getFilePath(day, name){
 function tskGetJournalPage(datestamp){
   return new Task(function(reject, resolve){
     const arg = datestamp.split(' ')?.[0].replaceAll("-", "");
-    qry(`[:find (pull ?p [*]) :where [?p :block/journal-day ${arg}]]`).fork(reject, function(result){
+    qry(`[:find (pull ?p [*]) :where [?p :block/journal-day $1]]`, arg).fork(reject, function(result){
       const obj = result?.[0]?.[0] || {};
       resolve(obj["journal?"] ? obj["original-name"] : null);
     });
@@ -326,7 +326,7 @@ const callLogseq = comp(promise, tskLogseq);
 
 function qryPrerequisites(name){
   return new Task(function(reject, resolve){
-    qry(`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`).fork(reject, function(results){
+    qry(`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "$1"]]`, name).fork(reject, function(results){
       resolve(results?.[0]?.[0]?.properties?.prerequisites || []);
     });
   });
@@ -744,7 +744,7 @@ function qryBacklinks(name, limit = Infinity){
         throw new Error('Page name is required');
       }
 
-      const items = await promise(qry(`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${name.toLowerCase()}"]]`).map(take(limit)));
+      const items = await promise(qry(`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "$1"]]`, name.toLowerCase()).map(take(limit)));
 
       const pageIds = new Set()
       items?.forEach(item => {
@@ -796,12 +796,13 @@ function qry(query, ...args){
       return q.replaceAll(`$${idx + 1}`, value);
     }, query);
     const replacements = query.indexOf("$1") !== -1;
+    console.log({query, args})
     tskLogseq('logseq.DB.datascriptQuery', replacements ? [q] : [q, ...args]).fork(reject, resolve);
   });
 }
 
 function qryPage(name){
-  return qry(`[:find (pull ?p [*]) :where [?p :block/original-name "${name}"]]`);
+  return qry(`[:find (pull ?p [*]) :where [?p :block/original-name "$1"]]`, name);
 }
 
 function fmtProps({format}, propName = null){
