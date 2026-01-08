@@ -585,14 +585,16 @@ function keeping(patterns, filter, hit = true){
 }
 
 function tskGetPage(given, options){
-  const {format} = options;
+  const {format, less, only} = options;
+  const agent = less?.[0] === true;
+  const human = only?.[0] === true;
   const {filter = {}} = config;
   return given ? new Task(async function(reject, resolve){
     try {
-      const patterns = options.agent || options.human ? Object.values(filter) : null;
-      const agentLess = options.agent ? patterns : null;
-      const humanOnly = options.human ? patterns : null;
-      const keep = keeping(agentLess || options.less, filter, false) || keeping(humanOnly || options.only, filter, true);
+      const patterns = agent || human ? Object.values(filter) : null;
+      const agentLess = agent ? patterns : null;
+      const humanOnly = human ? patterns : null;
+      const keep = keeping(agentLess || less, filter, false) || keeping(humanOnly || only, filter, true);
 
       const {name, path} = await identify(given);
 
@@ -1562,10 +1564,8 @@ program
   .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 1})
   .option('--vacant', 'Include vacant entries')
   .option('-a, --append <content:string>', 'Append content to page')
-  .option('-l, --less <patterns:string>', 'Less content matching regex patterns', { collect: true })
-  .option('-o, --only <patterns:string>', 'Only content matching regex patterns', { collect: true })
-  .option('--agent', 'Hide content not intended for agents (see config filter)')
-  .option('--human', 'Show content intended only for humans (see config filter)')
+  .option('-l, --less [patterns:string]', 'Less content matching regex patterns', { collect: true })
+  .option('-o, --only [patterns:string]', 'Only content matching regex patterns', { collect: true })
   .example("List wikilinks on a page", "nt page Mission | nt wikilinks")
   .example("Show content for wikilinked pages", "nt page Mission | nt wikilinks | nt page")
   .example("Show content for select pages", `nt list Atomic "Clojure Way" | nt page`)
@@ -1575,8 +1575,8 @@ program
   .example("Show only tasks", `nt page Atomic --only '^(TODO|DOING|DONE|WAITING|NOW|LATER)'`)
   .example("Show content minus filters", `nt page Atomic --less tasks --less links`)
   .example("Show only content for filters", `nt page Atomic --only tasks --only links`)
-  .example("Show agent-facing content per filters", `nt page Atomic --agent`)
-  .example("Show human-facing content per filters", `nt page Atomic --human`)
+  .example("Show agent-facing content per filters", `nt page Atomic --less`)
+  .example("Show human-facing content per filters", `nt page Atomic --only`)
   .example(`Find mention of "components" on a page`, `nt page Atomic | grep -C 3 components`)
   .example(`Show journal page for select date, no heading`, `nt p --heading=0 2025-12-03`)
   .action(pipeable(page));
@@ -1822,7 +1822,7 @@ program
           console.log(config.logseq.repo);
         }))
       .command("filter", new Command()
-        .description("Lists defined filters used in total by --agent and --human `page` options")
+        .description("Lists defined filters for use with --less and --only `page` options")
         .action(function(){
           Object.entries(config.filter ?? {})
             .forEach(([key, value]) => console.log(key, " => ", value));
@@ -1839,9 +1839,12 @@ if (import.meta.main) {
     program.showHelp();
     abort();
   } else {
-    const args = Deno.args.map(function(arg){
-      return arg === '--json' ? '--format=json' : arg === '--md' ? '--format=md' : arg;
-    })
-    await program.parse(args);
+    const replacing = {
+      "--json" : "--format=json",
+      "--md" : "--format=md",
+      "--agent" : "--less",
+      "--human" : "--only"
+    }
+    await program.parse(Deno.args.map(arg => replacing[arg] ?? arg));
   }
 }

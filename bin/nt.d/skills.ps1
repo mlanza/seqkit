@@ -1,3 +1,3 @@
 #!/usr/bin/env pwsh
-nt page Skills --agent
+nt page Skills --less
 nt tags Skills | sort | nt props description | nt wikify

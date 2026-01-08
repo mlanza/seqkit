@@ -136,14 +136,14 @@ nt page Atomic --less tasks --less links
 
 Some of the examples in the tool `--help` anticipate these defintions.
 
-This command includes only the filtered blocks (as per all filters):
+This command includes for the **human** only the filtered blocks (as per all filters):
 ```zsh
-nt page Atomic --human
+nt page Atomic --only
 ```
 
-This one is for an agent and excludes all that noise:
+This one is for an **agent** and excludes **all** that noise:
 ```zsh
-nt page Atomic --agent
+nt page Atomic --less
 ```
 
 ### Querying via Datalog
