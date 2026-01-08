@@ -42,7 +42,7 @@ These can be issued directly in [OpenCode](https://opencode.ai), Gemini, Claude,
 
 ## Getting Started
 
-Install the tool into your path, or extend your path, whichever you like:
+Install the tool into your path or extend your path, whichever you like:
 ```zsh
 export PATH=~/Documents/nt/bin:$PATH
 ```
