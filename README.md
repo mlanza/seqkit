@@ -8,7 +8,7 @@
 
 Your local-first commonplace book 📖 is memory scaffolding, a near perfect spot for accessing and keeping the information and instructions an agent needs to thrive.  How better to teach an agent your craft than by sharing your second 🧠 with it.
 
-The tool was designed to minimize ceremony, to compose, and to mind the Unix philosophy.  The `nt` commands, for example, can frequently receive the primary operand directly or via stdin.
+The tool was designed to minimize ceremony, to compose, and to mind the Unix philosophy.  That's why subcommands can frequently receive the primary operand directly or via stdin.
 
 Take skills.  Tag a page `Skills` and describe it with a `description` property.  Include any `prerequisites` that make sense and you're ready to go.  Prerequisite topics are automatically — and recursively — included when calling the `about` subcommand.
 
