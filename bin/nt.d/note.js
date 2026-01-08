@@ -766,9 +766,11 @@ function backlinks(options){
 }
 
 function query(options){
-  const limit = options.limit ? parseInt(options.limit) : Infinity;
-  return function(query){
-    return qry([query]).map(take(limit));
+  const limit = options.limit ? (typeof options.limit == "string" ? parseInt(options.limit) : options.limit) : Infinity;
+  return function(query, ...args){
+    const params = args.map(n => parseInt(n));
+    //console.log({limit, query, options, params});
+    return qry([query, ...params]); //.map(take(limit));
   }
 }
 
@@ -1705,8 +1707,8 @@ program
 program
   .command('query')
   .alias('q')
-  .description('Run Datalog query')
-  .arguments(demand("query"))
+  .description('Run Datalog query and args')
+  .arguments("<query> [args...]")
   .option('--limit <type:string>', 'Limit to N entries (omit for no limit)', {default: Infinity})
   .option('-f, --format <type:string>', 'Output format (md|json)', {default: 'md'})
   .option('--json', 'Output JSON format')
