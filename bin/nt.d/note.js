@@ -1814,12 +1814,14 @@ program
       .command("filter", new Command()
         .description("Lists defined filters used in total by --agent and --human `page` options")
         .action(function(){
-          Object.entries(config.filter ?? {}).forEach(([key, value]) => console.log(key, " => ", value));
+          Object.entries(config.filter ?? {})
+            .forEach(([key, value]) => console.log(key, " => ", value));
         }))
       .command("query", new Command()
         .description("Lists defined queries")
         .action(function(){
-          Object.entries(config.query ?? {}).forEach(([key, value]) => console.log(key, " => ", value));
+          Object.entries(config.query ?? {})
+            .forEach(([key, value]) => console.log(key, " => ", value));
         })));
 
 if (import.meta.main) {
