@@ -143,10 +143,12 @@ nt page Atomic --agent
 
 ### Querying via Datalog
 
-Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) spine.  With Datalog queries in easy reach, there's no limit to the queries and custom commands you can build.  The innards build on this.  It's one reason to prefer Logseq to Obsidian.
+Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) spine.  With Datalog queries in easy reach, there's no limit to the queries and custom commands you can build.  The innards build on this.  They can be parameterized.
+
+It's a reason to prefer Logseq to Obsidian.
 
 ```zsh
-$ nt q '[:find (pull ?p [*]) :where [?p :block/original-name "Atomic"]]'
+$ nt q '[:find (pull ?p [*]) :where [?p :block/original-name "$1"]]' Atomic
 ```
 These links about advanced queries may help:
 
