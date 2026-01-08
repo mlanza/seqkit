@@ -15,6 +15,18 @@ const orientSlashes = isWindows ? function (path) {
 const HOME = Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE");
 const NOTE_CONFIG = orientSlashes(Deno.env.get("NOTE_CONFIG") ?? `${HOME}/.config/nt/config.toml`);
 
+class Guidance extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "Guidance";
+    this.stack = `${this.name}: ${message}`;
+  }
+
+  toString(){
+    return this.message;
+  }
+}
+
 function tskConfig(path){
   function expandLogseq(logseq){
     const token = Deno.env.get('LOGSEQ_TOKEN') || null;
@@ -23,7 +35,7 @@ function tskConfig(path){
     }
     const repo = logseq?.repo?.replace("~", HOME);
     if (!repo) {
-      throw new Error("Logseq repo must be set.");
+      throw new Guidance("Logseq repo must be set.");
     }
     const endpoint = "http://127.0.0.1:12315/api";
     return {endpoint, token, ...logseq, repo};
@@ -32,7 +44,8 @@ function tskConfig(path){
     try {
       const existing = await exists(path);
       if (!existing) {
-        throw new Error("Note config not established.");
+        reject(new Guidance(`Note config not present at ${path}.`));
+        return;
       }
       const text = await Deno.readTextFile(existing);
       const cfg = parse(text);
@@ -67,7 +80,9 @@ function println(lines){
 }
 
 function abort(error){
-  error && console.error(error);
+  if (error) {
+    console.error(error instanceof Guidance ? String(error) : error);
+  }
   Deno.exit(error ? 1 : 0);
 }
 
@@ -1351,21 +1366,18 @@ async function update(options, name){
 
   logger.log(`Page: ${pageName}, Prepend: ${prependMode}, Overwrite: ${overwriteMode}`);
 
-  // Read JSON payload from stdin
-  const payload = await readStdin();
-
-  if (!payload) {
-    abort("Error: No payload received from stdin");
-  }
-
-  logger.log(`Payload: ${payload}`);
-
-  // Parse JSON payload
+    // Parse JSON payload
   let parsedPayload;
   try {
+    const payload = await readStdin();
+
+    if (!payload) {
+      throw new Error("No payload received from stdin.");
+    }
+
     parsedPayload = JSON.parse(payload);
-  } catch (error) {
-    abort(`Error parsing JSON payload: ${error.message}`);
+  } catch (cause) {
+    abort(new Error(`Error receiving payload.`, {cause}));
   }
 
   // Call purge if overwrite mode is enabled
@@ -1373,7 +1385,6 @@ async function update(options, name){
     logger.log("Overwrite mode enabled, purging page first...");
 
     try {
-      // Use integrated wipe command
       await wipeCommand(pageName, options);
     } catch (error) {
       logger.log(`Warning: Purge had issues, continuing with overwrite... ${error.message}`);
