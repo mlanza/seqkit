@@ -128,6 +128,12 @@ Or include one type of block:
 nt page Atomic --only tasks
 ```
 
+Or multiple:
+
+```zsh
+nt page Atomic --less tasks --less links
+```
+
 Some of the examples in the tool `--help` anticipate these defintions.
 
 This command includes only the filtered blocks (as per all filters):
