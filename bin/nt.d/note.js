@@ -564,7 +564,8 @@ function keeping(patterns, shorthand, hit = true){
   } : null
 }
 
-function tskGetPage(given, {format}){
+function tskGetPage(given, options){
+  const {format} = options;
   return given ? new Task(async function(reject, resolve){
     try {
       const patterns = options.agent || options.human ? config.agentignore : null;
@@ -607,6 +608,7 @@ function tskGetPage(given, {format}){
 }
 
 function page(options){
+  console.log({options})
   return function(given){
     return given ? tskNamed(given).
       chain(Task.juxt(Task.of, name => tskGetPage(name, options))).
