@@ -241,7 +241,7 @@ function getFilePath(day, name){
 function tskGetJournalPage(datestamp){
   return new Task(function(reject, resolve){
     const arg = datestamp.split(' ')?.[0].replaceAll("-", "");
-    qry([`[:find (pull ?p [*]) :where [?p :block/journal-day ${arg}]]`]).fork(reject, function(result){
+    qry(`[:find (pull ?p [*]) :where [?p :block/journal-day ${arg}]]`).fork(reject, function(result){
       const obj = result?.[0]?.[0] || {};
       resolve(obj["journal?"] ? obj["original-name"] : null);
     });
@@ -310,7 +310,7 @@ const callLogseq = comp(promise, tskLogseq);
 
 function qryPrerequisites(name){
   return new Task(function(reject, resolve){
-    qry([`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`]).fork(reject, function(results){
+    qry(`[:find (pull ?p [:block/properties :block/original-name]) :where [?p :block/original-name "${name}"]]`).fork(reject, function(results){
       resolve(results?.[0]?.[0]?.properties?.prerequisites || []);
     });
   });
@@ -692,11 +692,11 @@ function qryProps(prop, vals, mode = "any"){
       }
       const conditions = vals.map(val => `[(contains? ?prop "${val}")]`).join(' ');
       const whereClause = mode === 'any' ? `(or ${conditions})` : conditions;
-      return qry([`[:find (pull ?page [:block/original-name])
+      return qry(`[:find (pull ?page [:block/original-name])
                     :where
                     [?page :block/properties ?props]
                     [(get ?props :${prop}) ?prop]
-                    ${whereClause}]`]).
+                    ${whereClause}]`).
         fork(reject, function(results){
           const names = results.map(([item]) => item?.["original-name"]).filter(name => name);
           resolve(names);
@@ -727,7 +727,7 @@ function qryBacklinks(name, limit = Infinity){
         throw new Error('Page name is required');
       }
 
-      const items = await promise(qry([`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${name.toLowerCase()}"]]`], limit));
+      const items = await promise(qry(`[:find (pull ?b [:block/content :block/page]) :where [?b :block/path-refs ?p] [?p :block/name "${name.toLowerCase()}"]]`).map(take(limit)));
 
       const pageIds = new Set()
       items?.forEach(item => {
@@ -768,9 +768,8 @@ function backlinks(options){
 function query(options){
   const limit = options.limit ? (typeof options.limit == "string" ? parseInt(options.limit) : options.limit) : Infinity;
   return function(query, ...args){
-    const params = args.map(n => parseInt(n));
-    //console.log({limit, query, options, params});
-    return qry([query, ...params]); //.map(take(limit));
+    //console.log({limit, options, query, args});
+    return qry(query, ...args); //.map(take(limit));
   }
 }
 
@@ -781,7 +780,7 @@ function qry(query, ...args){
 }
 
 function qryPage(name){
-  return qry([`[:find (pull ?p [*]) :where [?p :block/original-name "${name}"]]`]);
+  return qry(`[:find (pull ?p [*]) :where [?p :block/original-name "${name}"]]`);
 }
 
 function fmtProps({format}, propName = null){
