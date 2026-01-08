@@ -130,12 +130,12 @@ nt page Atomic --only props
 
 Some of the examples in the tool `--help` anticpate these defintions.
 
-Or include only all the filtered blocks (the sum of all filters):
+This command includes only the filtered blocks (as per all filters):
 ```zsh
 nt page Atomic --human
 ```
 
-Or, for an agent, exclude all that noise:
+This one is for an agent and excludes all that noise:
 ```zsh
 nt page Atomic --agent
 ```
