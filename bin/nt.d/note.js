@@ -774,9 +774,9 @@ function query(options){
   }
 }
 
-function qry(args){
+function qry(query, ...args){
   return new Task(function(reject, resolve){
-    tskLogseq('logseq.DB.datascriptQuery', args).fork(reject, resolve);
+    tskLogseq('logseq.DB.datascriptQuery', [query, ...args]).fork(reject, resolve);
   });
 }
 
