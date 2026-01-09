@@ -58,7 +58,7 @@ nt about "Agent Instructions" | nt document --para | cat -s
 
 ## Progressive Disclosure
 
-Take skills.  You want to provide a menu to your pages.  Create a page called `Skills` in Logseq, then start defining pages, tagging them `Skills`, and describing them with a `description` property.
+Take skills.  Want to provide a menu to your pages?  Create a page called `Skills` in Logseq. Then start defining pages, tagging them `Skills`, and describing them with a `description` property.
 
 Getting frontmatter properties:
 
