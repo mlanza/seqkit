@@ -58,7 +58,7 @@ nt about "Agent Instructions" | nt document --para | cat -s
 
 ## Progressive Disclosure
 
-Take skills.  You want to provide a menu to your pages.  Create a page called `Skills` in Logseq, the start defining skills pages, tagging them `Skills` and describing them with a `description` property.
+Take skills.  You want to provide a menu to your pages.  Create a page called `Skills` in Logseq, then start defining pages, tagging them `Skills`, and describing them with a `description` property.
 
 Getting frontmatter properties:
 
@@ -74,7 +74,7 @@ prerequisites:: [[Clojure Way]], [[Coding Style]]
 description:: Guidance for writing, refactoring or fixing code
 ```
 
-Conveniently list it among all skills via:
+Conveniently, list it among all skills via:
 
 ```zsh
 $ nt skills
