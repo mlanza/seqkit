@@ -150,11 +150,11 @@ nt page Atomic --less
 ```
 Internally, this is how `about` provides your agent with trimmed context.
 
-Alternately, if the use of audience-focused terms aids your remembrance, prefer
+Alternately, if the use of audience-focused terms aids your remembrance, use
 ```zsh
 nt page Atomic --human
 ```
-and
+or
 ```zsh
 nt page Atomic --agent
 ```
