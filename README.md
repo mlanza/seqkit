@@ -64,7 +64,7 @@ Within config, at minimum, identify where your Logseq repo is:
 repo = 'D:\notes'
 ```
 
-If you change the `endpoint` to something other than the default of http://127.0.0.1:12315/api, you'll have to add it and update the value there too.
+If you change the `endpoint` to something other than the default of http://127.0.0.1:12315/api, you'll have to include that setting too.
 
 Once done, start Logseq, start your shell and issue a command to confirm operability.
 
