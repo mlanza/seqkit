@@ -797,9 +797,15 @@ function qry(query, ...args){
     const q = args.reduce(function(q, value, idx){
       return q.replaceAll(`$${idx + 1}`, value);
     }, query);
-    const params = query.indexOf("$1") !== -1;
-    //console.log({q, args, params})
-    tskLogseq('logseq.DB.datascriptQuery', params ? [q] : [q, ...args]).fork(reject, resolve);
+    const placeholders = /\$(\d+)/g;
+    const params = query.search(placeholders) !== -1;
+    const ready = q.search(placeholders) === -1;
+    if (!ready) {
+      reject(new Guidance(`Must supply placeholders first: ${q}`));
+    } else {
+      //console.log({q, args, params})
+      tskLogseq('logseq.DB.datascriptQuery', params ? [q] : [q, ...args]).fork(reject, resolve);
+    }
   });
 }
 
