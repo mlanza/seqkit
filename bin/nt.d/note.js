@@ -1379,11 +1379,11 @@ async function update(options, name){
   const prependMode = options.prepend || false;
   const overwriteMode = options.overwrite || false;
   const logger = getLogger(options.debug || false);
-  const pageName = await promise(tskNamed(name || datestamp()));
+  const pageName = await promise(tskNamed(name || datestamp())) ?? name;
 
   logger.log(`Page: ${pageName}, Prepend: ${prependMode}, Overwrite: ${overwriteMode}`);
 
-    // Parse JSON payload
+  // Parse JSON payload
   let parsedPayload;
   try {
     const payload = await readStdin();
@@ -1413,6 +1413,7 @@ async function update(options, name){
   let pageCheck;
   try {
     pageCheck = await callLogseq('logseq.Editor.getPage', [pageName]);
+
   } catch (error) {
     abort(`Error checking page existence: ${error.message}`);
   }
