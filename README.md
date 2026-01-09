@@ -149,11 +149,11 @@ This one is for an **agent** and includes everything but that noise:
 nt page Atomic --less
 ```
 
-Alternately, if it helps you remember:
+Alternately, if the use of audience-focused terms aids memory, you can prefer
 ```zsh
 nt page Atomic --human
 ```
-or
+and
 ```zsh
 nt page Atomic --agent
 ```
