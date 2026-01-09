@@ -734,7 +734,7 @@ function has(options, prop = null){
     throw new Error('--all and --any options are mutually exclusive');
   }
 
-  const qry = function(prop, ...vals){
+  function qry(prop, ...vals){
     return qryProps(prop, vals, options.any ? 'any' : 'all');
   }
 
