@@ -41,5 +41,5 @@ if ($propArgs.Count -gt 0) {
 
 # If stdin was provided, process it through serial then update
 if ($hasStdin) {
-    $inputs | & nt blocked | & nt serial | & nt update $otherArgs $pageName
+    $inputs | & nt serial | & nt update $otherArgs $pageName
 }
