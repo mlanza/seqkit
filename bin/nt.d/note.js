@@ -797,9 +797,9 @@ function qry(query, ...args){
     const q = args.reduce(function(q, value, idx){
       return q.replaceAll(`$${idx + 1}`, value);
     }, query);
-    const placeholders = /\$(\d+)/g;
-    const params = query.search(placeholders) !== -1;
-    const ready = q.search(placeholders) === -1;
+    const placeholder = /\$(\d+)/g;
+    const params = query.search(placeholder) !== -1;
+    const ready = q.search(placeholder) === -1;
     if (!ready) {
       reject(new Guidance(`Must supply placeholders first: ${q}`));
     } else {
