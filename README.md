@@ -164,13 +164,13 @@ It's a reason to prefer Logseq to Obsidian.
 nt q '[:find (pull ?p [*]) :where [?p :block/original-name "$1"]]' Atomic
 ```
 
-Any quirks around whether a query runs come from the HTTP API’s implementation, not from `nt` itself. If you’re testing what the API does or doesn’t support, call it directly with `curl`.  For example if you get
+Any quirks around whether a query runs come from the HTTP API’s implementation, not from `nt` itself. If you’re testing what the API does or doesn’t support, call it directly with `curl`.  For example, if you get
 
 ```zsh
 Error: Missing rules var '%' in :in
 ```
 
-there's likely some syntax or advances queries it can't support.
+there's likely something in the advanced query syntax it can't support.
 
 Look here for help forming valid queries:
 
