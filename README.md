@@ -90,9 +90,9 @@ $ nt about Coding
 
 ### Agent Content Filtering
 
-Because I use Logseq for both [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done), my pages have mixed content.  I may have a smattering of links to interestings sites and/or a pile of tasks in various stages pertinent to the page topic or project.  I may also have information and/or instructions.  What I'm getting at is some of the stuff on a page is useful to me alone, while other stuff is more generally useful to a third party like an agent.
+Because I use Logseq for both [PKM](https://en.wikipedia.org/wiki/Personal_knowledge_management) and [GTD](https://en.wikipedia.org/wiki/Getting_Things_Done), my pages have mixed content.  I may have a smattering of links to interestings sites and/or a pile of tasks in various stages pertinent to the page topic or project.  I may also have information and/or instructions.  That means some of the content on a page is useful only to me.
 
-This is not about sensitive content as I don't keep that in my stores.  The concern is not leaks, but wasted or confusing context.  To help the `nt page` command has options to exclude certain blocks (along with the child content).
+This is not about sensitive content as I don't keep that in my stores.  The concern is not leaks, but wasted or confusing context.  To help, the `nt page` command has options to exclude extraneous blocks along with their children.
 
 This command filters out task blocks:
 
