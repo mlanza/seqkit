@@ -56,7 +56,7 @@ The following assumes the target page `prerequisites` is replete with your most 
 nt about "Agent Instructions" | nt document --para | cat -s
 ```
 
-## Progressive Disclosure
+### Progressive Disclosure
 
 Take skills.  Want to provide a menu of capabilities?  Create a page called `Skills` in Logseq. Then start defining pages, tagging them `Skills`, and describing them with a `description` property.
 
@@ -80,7 +80,7 @@ Conveniently, list it among all skills via:
 $ nt skills
 ```
 
-## Prerequisites
+### Prerequisites
 
 Some topics build on other other topics and cannot stand on their own.  These pages require that added context to make sense.  Include a `prerequisites` property on the page and add wikilinks to the prerequisites.  Whenever you retrieve the page via `about` the prerequisite topics will automatically — and recursively — be included.
 
