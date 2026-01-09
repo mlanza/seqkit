@@ -785,18 +785,18 @@ function backlinks(options){
 }
 
 function query(options){
-  return function(q, ...args){
-    const query = config?.query?.[q] || q;
+  return function(query, ...args){
     //console.log({limit, options, query, args});
     return qry(query, ...args).map(take(options.limit));
   }
 }
 
-function qry(query, ...args){
+function qry(text, ...args){
+  const query = config?.query?.[text] ?? text;
   return new Task(function(reject, resolve){
     const q = args.reduce(function(q, value, idx){
       return q.replaceAll(`$${idx + 1}`, value);
-    }, query);
+    }, query).replaceAll("\n", "");
     const placeholder = /\$(\d+)/g;
     const params = query.search(placeholder) !== -1;
     const ready = q.search(placeholder) === -1;
