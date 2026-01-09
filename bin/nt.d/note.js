@@ -1015,7 +1015,7 @@ function tskGetAllPages({type = "regular", limit = Infinity} = {}){
     .map(take(limit));
 }
 
-class SerialParser {
+class Blockifier {
   constructor() {
     this.state = {
       rootBlocks: [],
@@ -1525,7 +1525,7 @@ async function update(options, name){
   }
 }
 
-async function serial(){
+async function blocks(){
   const input = await new Response(Deno.stdin.readable).text();
 
   if (!input.trim()) {
@@ -1533,7 +1533,7 @@ async function serial(){
     Deno.exit(1);
   }
 
-  const parser = new SerialParser();
+  const parser = new Blockifier();
   const result = parser.parse(input);
   console.log(JSON.stringify(result, null, 2));
 }
@@ -1612,9 +1612,9 @@ program
 program
   .command('update')
   .hidden()
-  .description('Append stdin structured content to page')
+  .description('Append blocks on stdin to page')
   .arguments("[name]")
-  .option('--prepend', 'Prepend content instead of appending')
+  .option('-p, --prepend', 'Prepend instead of append')
   .option('--debug', 'Enable debug output')
   .option('--overwrite', 'Purge any existing page content (not properties)')
   .action(update);
@@ -1788,10 +1788,10 @@ program
   .description('Retrieves information about a topic including prequisites');
 
 program
-  .command('serial')
-  .description('Append stdin content to page')
+  .command('blocks')
+  .description('Convert flat markdown to structured blocks')
   .arguments(PIPED)
-  .action(serial);
+  .action(blocks);
 
 program
   .command('seen')

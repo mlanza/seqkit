@@ -55,5 +55,5 @@ if ($propArgs.Count -gt 0) {
 
 # Unified Pipeline: Process all collected lines from any source
 if ($linesToProcess.Count -gt 0) {
-    $linesToProcess | & nt blocked | & nt serial | & nt update $otherArgs $pageName
+    $linesToProcess | & nt blocked | & nt blocks | & nt update $otherArgs $pageName
 }
