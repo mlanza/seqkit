@@ -56,7 +56,7 @@ Add these environment variables to your shell:
 * **LOGSEQ_TOKEN** - a token you configured for the HTTP API
 * **NOTE_CONFIG** - path to config file (default is `~/.config/nt/config.toml`)
 
-Within config, at minimum set:
+Within config, at minimum, set:
 
 ```toml
 # config.toml
