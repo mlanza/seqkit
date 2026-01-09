@@ -1549,8 +1549,8 @@ const program = new Command()
   .name('nt')
   .description(`A general-purpose tool for interacting with Logseq content.
 
-  ${PIPED} = pipeline only operations
- ${PIPEABLE} = primary operand may be piped in
+  ${PIPED} = pipeline-only operations
+ ${PIPEABLE} = primary argument may be piped in
 
 `.trim())
   .version('1.0.0-beta')
@@ -1766,7 +1766,7 @@ program
   .command('day')
   .alias('d')
   .arguments("[offset...]")
-  .description(`List one or more days ${PIPEABLE}`)
+  .description(`List one or more days`)
   .example(`Show today's journal page`, `nt day | nt page`)
   .example(`Show yesterday's journal page`, `nt day -1 | nt page`)
   .example(`Show tomorrows's journal page`, `nt day 1 | nt page`)
