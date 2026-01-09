@@ -56,16 +56,15 @@ Add these environment variables to your shell:
 * **LOGSEQ_TOKEN** - a token you configured for the HTTP API
 * **NOTE_CONFIG** - path to config file (default is `~/.config/nt/config.toml`)
 
-Within config, at minimum, set:
+Within config, at minimum, identify where your Logseq repo is:
 
 ```toml
 # config.toml
 [logseq]
 repo = 'D:\notes'
-endpoint = 'http://127.0.0.1:12315/api'
 ```
 
-The `endpoint` can be omitted assuming you haven't changed its default.
+If you change the `endpoint` to something other than the default of http://127.0.0.1:12315/api, you'll have to add it and update the value there too.
 
 Once done, start Logseq, start your shell and issue a command to confirm operability.
 
