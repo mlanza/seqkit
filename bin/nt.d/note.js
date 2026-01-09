@@ -734,7 +734,9 @@ function has(options, prop = null){
     throw new Error('--all and --any options are mutually exclusive');
   }
 
+
   const qry = function(prop, ...vals){
+  console.log({options, prop, vals});
     return qryProps(prop, vals, options.any ? 'any' : 'all');
   }
 
@@ -1718,8 +1720,8 @@ program
   .arguments(demand("id|name"))
   .option('-f, --format <type:string>', 'Output format (md|json)', {default: 'md'})
   .option('--json', 'Output JSON format')
-  .example("Normalize to the actual casing of the page name via stdin", `echo "writing voice" | nt n`)
-  .example("Normalize to the actual casing of the page name", `nt n "writing voice"`)
+  .example("Get the actual casing of a page name via stdin", `echo "writing voice" | nt n`)
+  .example("Get the actual casing of a page name", `nt n "writing voice"`)
   .action(pipeable(constantly(tskNamed)));
 
 program
