@@ -66,7 +66,7 @@ repo = 'D:\notes'
 
 If you change the `endpoint` to something other than the default of http://127.0.0.1:12315/api, you'll have to include that setting too.
 
-Once done, start Logseq, start your shell and issue a command to confirm operability.
+Once done, start Logseq, startup your shell, and issue some commands.
 
 ```zsh
 nt page Atomic # show some page, for example
