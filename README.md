@@ -82,7 +82,7 @@ description:: Guidance for writing, refactoring or fixing code
 
 ### Prerequisites
 
-Some topics build on other other topics and cannot stand on their own.  These pages require that added context to make sense.  Include a `prerequisites` property on the page and add wikilinks to the prerequisites.  Whenever you retrieve the page via `about` the prerequisite topics will automatically — and recursively — be included.
+Some topics build on other other topics and cannot stand on their own.  These pages require that added context to make sense.  Include a `prerequisites` property on the page that links to any prerequisites.  Whenever the page is retrieved via `about`, they'll automatically — and recursively — be included.
 
 ```zsh
 $ nt about Coding
