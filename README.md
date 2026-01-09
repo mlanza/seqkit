@@ -121,17 +121,17 @@ tasks = "^(TODO|DOING|LATER|NOW|CANCELED|WAITING)"
 links = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+\"[^\"\\r\\n]*\")?\\s*\\))\\s*$"
 ```
 
-Having that, you can exclude one type of block:
+Having that, you can exclude blocks by their keys:
 ```zsh
 nt page Atomic --less tasks
 ```
 
-Or include one type of block:
+Or include blocks by their keys:
 ```zsh
 nt page Atomic --only tasks
 ```
 
-Or multiple:
+Or target multiple:
 
 ```zsh
 nt page Atomic --less tasks --less links
@@ -139,12 +139,12 @@ nt page Atomic --less tasks --less links
 
 Some of the examples in the tool `--help` anticipate these defintions.
 
-This command is for a **human** and includes only what blocks filter out:
+This command is for the **human** and includes only what's normally filtered out:
 ```zsh
 nt page Atomic --only
 ```
 
-This one is for an **agent** and includes everything but that noise:
+This one is for an **agent** and includes all but the noise:
 ```zsh
 nt page Atomic --less
 ```
