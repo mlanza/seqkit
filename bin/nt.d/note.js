@@ -1597,10 +1597,10 @@ program
   .option('--prepend', 'Prepend content instead')
   .option('--overwrite', 'Purges any existing page content (not properties)')
   .option('--debug', 'Enable debug output')
-  .example("Append content to current journal page", `echo "- Walked for 1h" | nt post`)
-  .example("Append block to target page", `echo "- Egg sandwich" | nt post Diet`)
-  .example("Replace target page", `echo "- Milk\\n- Bread\\n- Eggs" | nt post Groceries --overwrite`)
-  .example("Prepend block to target page", `echo "- Mom" | nt post Calls --prepend`)
+  .example("Append content to current journal page", `echo "Walked for 1h" | nt post`)
+  .example("Append block to target page", `echo "Egg sandwich" | nt post Diet`)
+  .example("Replace target page", `echo "Milk\\nBread\\nEggs" | nt post Groceries --overwrite`)
+  .example("Prepend block to target page", `echo "Mom" | nt post Calls --prepend`)
   .example(`Copy a page`, `nt p --heading=0 "Recipe Template" | nt post Lasagna`);
 
 program
