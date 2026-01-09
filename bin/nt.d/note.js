@@ -1629,7 +1629,7 @@ program
 program
   .command('tags')
   .alias('t')
-  .description(`List pages with all of the given tags ${PIPEABLE}`)
+  .description(`List pages with all the given tags ${PIPEABLE}`)
   .arguments(demand("tags..."))
   .option('--all', 'Require all tags to be present (default)')
   .option('--any', 'Require any tag to be present')
