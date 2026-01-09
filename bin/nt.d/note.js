@@ -791,8 +791,8 @@ function query(options){
   }
 }
 
-function qry(text, ...args){
-  const query = config?.query?.[text] ?? text;
+function qry(template, ...args){
+  const query = config?.query?.[template] ?? template;
   return new Task(function(reject, resolve){
     const q = args.reduce(function(q, value, idx){
       return q.replaceAll(`$${idx + 1}`, value);
