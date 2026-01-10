@@ -1543,13 +1543,13 @@ function pages(options){
 }
 
 const PIPED = `📥`;
-const PIPEABLE = `↳📥`;
+const PIPEABLE = `📨`;
 
 const program = new Command()
   .name('nt')
   .description(`A general-purpose tool for interacting with Logseq content.
 
-  ${PIPED} = pipeline-only operations
+ ${PIPED} = pipeline-only operations
  ${PIPEABLE} = supply primary argument directly or pipe them in
 
 `.trim())
