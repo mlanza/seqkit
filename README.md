@@ -97,13 +97,13 @@ It's not a question of sensitivity or leaks. I don't keep that kind of content i
 This command filters out task blocks:
 
 ```zsh
-nt page Atomic --less '^(TODO|DOING|DONE|WAITING|NOW|LATER|DONE)'
+nt page Atomic --less '^(TODO|DOING|DONE|LATER|NOW|CANCELED|WAITING)'
 ```
 
 While, conversely, this one shows only task blocks:
 
 ```zsh
-nt page Atomic --only '^(TODO|DOING|DONE|WAITING|NOW|LATER|DONE)'
+nt page Atomic --only '^(TODO|DOING|DONE|LATER|NOW|CANCELED|WAITING)'
 ```
 
 You can send in multiple values:
@@ -117,7 +117,7 @@ But typing that will get tedious fast.  Better to define a `filter` table in you
 ```toml
 [filter]
 props = "^[^\\s:]+::"
-tasks = "^(TODO|DOING|LATER|NOW|CANCELED|WAITING|DONE)"
+tasks = "^(TODO|DOING|DONE|LATER|NOW|CANCELED|WAITING)"
 links = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+\"[^\"\\r\\n]*\")?\\s*\\))\\s*$"
 ```
 
