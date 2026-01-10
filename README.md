@@ -97,7 +97,7 @@ It's not a question of sensitivity or leaks. I don't keep that kind of content i
 This command filters out task blocks:
 
 ```zsh
-nt page Atomic --less '^(TODO|DOING|DONE|WAITING|NOW|LATER)'
+nt page Atomic --less '^(TODO|DOING|DONE|WAITING|NOW|LATER|DONE)'
 ```
 
 While, conversely, this one shows only task blocks:
