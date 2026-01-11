@@ -490,37 +490,112 @@ function normalizeSeparator(parts){
   return (parts.join("\n").trim() + "\n").split("\n");
 }
 
-async function look(options, given, ...adds) {
-  console.log({ options });
+async function prop(options) {
   const props = /^([^\s:]+):: (.+)/;
-  const collected = [];
-  const properties = {};
-  const additions = [];
+  const consolidatedAdds = {};
+  const consolidatedRemoves = {};
+  const processedKeys = new Set();
 
-  const {name, path} = await identify(given);
-  const contents = (await Deno.readTextFile(path)).replace(/\s+$/, '');
-  for (const content of contents.split("\n")) {
-    const m = content.match(props)
-    if (!m) break;
+  // Gather and consolidate additions
+  if(options.add && Array.isArray(options.add)){
+    for(const add of options.add){
+      const [key, value] = add.split("=");
+      if(key && value) {
+        if(!consolidatedAdds[key]) consolidatedAdds[key] = [];
+        consolidatedAdds[key].push(value);
+      }
+    }
+  }
 
-    const [, key, values] = m;
-    if (props.test(content)) {
-      properties[key] = values;
-      collected.push({key, values, content});
+  // Gather and consolidate removals
+  if(options.remove && Array.isArray(options.remove)){
+    for(const remove of options.remove){
+      const [key, value] = remove.split("=");
+      if(key && value) {
+        if(!consolidatedRemoves[key]) consolidatedRemoves[key] = [];
+        consolidatedRemoves[key].push(value);
+      }
+    }
+  }
+
+  const input = await new Response(Deno.stdin.readable).text();
+  const lines = input.split('\n');
+  const output = [];
+
+  // First, output heading line if there is one
+  let lineIndex = 0;
+  if (lines[0] && lines[0].startsWith('#')) {
+    output.push(lines[0]);
+    lineIndex = 1;
+  }
+
+  // Skip any empty lines after heading
+  while (lineIndex < lines.length && lines[lineIndex].trim() === '') {
+    output.push(lines[lineIndex]);
+    lineIndex++;
+  }
+
+  // Process property lines
+  while (lineIndex < lines.length) {
+    const line = lines[lineIndex];
+    const m = line.match(props);
+
+    if (m) {
+      // Process property line
+      const [, key, values] = m;
+      processedKeys.add(key);
+
+      // Apply removals
+      let currentValues = values.split(', ').filter(v => v.trim());
+      if (consolidatedRemoves[key]) {
+        currentValues = currentValues.filter(v => !consolidatedRemoves[key].includes(v));
+      }
+
+      // Apply additions (deduplicate)
+      if (consolidatedAdds[key]) {
+        for (const value of consolidatedAdds[key]) {
+          if (!currentValues.includes(value)) {
+            currentValues.push(value);
+          }
+        }
+      }
+
+      // Output modified property line if we still have values
+      if (currentValues.length > 0) {
+        const formattedValues = currentValues.map(v => v.includes(' ') ? `[[${v}]]` : v);
+        output.push(`${key}:: ${currentValues.join(', ')}`);
+      }
+
+      lineIndex++;
     } else {
+      // We've reached the end of properties
       break;
     }
   }
 
-  for(const add of adds){
-    const [key, value] = add.split("=");
-
-    pairs.push({key, value});
+  // Output unprocessed add operations as new properties
+  for (const [key, values] of Object.entries(consolidatedAdds)) {
+    if (!processedKeys.has(key)) {
+      const formattedValues = values.map(v => v.includes(' ') ? `[[${v}]]` : v);
+      output.push(`${key}:: ${formattedValues.join(', ')}`);
+      processedKeys.add(key);
+    }
   }
 
-  console.log({ pairs , properties, collected });
-}
+  // Skip any empty lines between properties and content
+  while (lineIndex < lines.length && lines[lineIndex].trim() === '') {
+    output.push(lines[lineIndex]);
+    lineIndex++;
+  }
 
+  // Output rest of content unchanged
+  while (lineIndex < lines.length) {
+    output.push(lines[lineIndex]);
+    lineIndex++;
+  }
+
+  console.log(output.join('\n'));
+}
 
 function tskGetPage(given, options) {
   const {keep, fixed} = LogseqPage.selects(options, config);
@@ -1228,17 +1303,24 @@ program
   .description('Retrieves information about a topic including prequisites');
 
 program
+  .command('prop')
+  .description('Rewrite page properties')
+  .option('-a, --add <value>', 'Property to add (format: key=value)', { collect: true })
+  .option('-r, --remove <value>', 'Property to remove (format: key=value)', { collect: true })
+  .arguments(PIPED)
+  .action(async (options) => {
+    try {
+      await prop(options);
+    } catch (error) {
+      abort(error);
+    }
+  });
+
+program
   .command('parse')
   .description('Convert flat markdown to structured blocks')
   .arguments(PIPED)
   .action(parse);
-
-program
-  .command('look')
-  .description('Convert flat markdown to structured blocks')
-  .arguments("<name> [adds...]")
-  .action(look);
-
 
 program
   .command('stringify')
