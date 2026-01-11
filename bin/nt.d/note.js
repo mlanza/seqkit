@@ -3,8 +3,7 @@ import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
 import { TextLineStream } from "https://deno.land/std/streams/text_line_stream.ts";
 import { parse } from "jsr:@std/toml";
 import Task from "https://esm.sh/data.task";
-import Blockifier from "./libs/blockifer.js";
-import Unblockifier from "./libs/unblockifer.js";
+import LogseqPage from "./libs/logseq-page.js";
 
 const isWindows = Deno.build.os === "windows";
 
@@ -595,7 +594,7 @@ function tskGetPage(given, options){
           .map(block => selectBlock(block, keep, fixed))
           .filter(block => block !== null) : result;
 
-      const lines = format === "md" ? Unblockifier.reconst(data) : data;
+      const lines = format === "md" ? LogseqPage.stringify(data) : data;
 
       resolve(lines);
 
@@ -1172,7 +1171,7 @@ async function blocks(){
     Deno.exit(1);
   }
 
-  const result = Blockifier.parse(input);
+  const result = LogseqPage.parse(input);
   console.log(JSON.stringify(result, null, 2));
 }
 
@@ -1426,26 +1425,27 @@ program
   .description('Retrieves information about a topic including prequisites');
 
 program
-  .command('blocks')
+  .command('parse')
   .description('Convert flat markdown to structured blocks')
   .arguments(PIPED)
   .action(blocks);
 
 program
-  .command('reconst')
+  .command('stringify')
+  .alias('str')
   .description('Convert structured blocks back to markdown')
   .arguments(PIPED)
   .action(async () => {
     const input = await new Response(Deno.stdin.readable).text();
-    
+
     if (!input.trim()) {
       console.error("Error: No input provided via stdin");
       Deno.exit(1);
     }
-    
+
     try {
       const data = JSON.parse(input);
-      const result = Unblockifier.reconst(data);
+      const result = LogseqPage.stringify(data);
       console.log(result);
     } catch (error) {
       console.error("Error parsing JSON input:", error);
