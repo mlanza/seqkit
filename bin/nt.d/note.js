@@ -761,7 +761,7 @@ function props(options){
 function prop(options){
   return function(pageName){
     return addPageProperties(pageName, options).map(function(name){
-      if (format === 'json') {
+      if (options.format === 'json') {
         return [name, options.add];
       } else {
         return [name, options.add.map(prop => {
@@ -773,16 +773,16 @@ function prop(options){
   }
 }
 
-function addPageProperties(pageName, options){
+function addPageProperties(given, options){
   return new Task(async function(reject, resolve){
     try {
       if (!options.add || options.add.length === 0) {
         throw new Error('At least one --add option is required');
       }
 
-      const {name} = await identify(pageName);
+      const {name} = await identify(given);
       if (!name) {
-        throw new Error(`Page not found: ${pageName}`);
+        throw new Error(`Page not found: ${given}`);
       }
 
       // Get page blocks tree to find first block (where page properties live)
