@@ -1172,8 +1172,7 @@ async function blocks(){
     Deno.exit(1);
   }
 
-  const parser = new Blockifier();
-  const result = parser.parse(input);
+  const result = Blockifier.parse(input);
   console.log(JSON.stringify(result, null, 2));
 }
 
