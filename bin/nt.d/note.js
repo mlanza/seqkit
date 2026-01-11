@@ -4,7 +4,6 @@ import { TextLineStream } from "https://deno.land/std/streams/text_line_stream.t
 import * as toml from "jsr:@std/toml";
 import Task from "https://esm.sh/data.task";
 import LogseqPage from "./libs/logseq-page.js";
-import { Str } from "./libs/logseq-page.js";
 
 const isWindows = Deno.build.os === "windows";
 
@@ -493,7 +492,7 @@ function normalizeSeparator(parts){
 }
 
 function tskGetPage(given, options) {
-  const {keep, fixed} = Str(options, config);
+  const {keep, fixed} = LogseqPage.selects(options, config);
   return given ? new Task(async function(reject, resolve){
     try {
       const {name, path} = await identify(given);
@@ -1362,7 +1361,7 @@ program
   .option('-o, --only [patterns:string]', 'Only content matching regex patterns', { collect: true })
   .arguments(PIPED)
   .action(async (options) => {
-    const { keep, fixed } = Str(options, config);
+    const { keep, fixed } = LogseqPage.selects(options, config);
     const input = await new Response(Deno.stdin.readable).text();
 
     if (!input.trim()) {

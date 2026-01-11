@@ -16,18 +16,6 @@ function keeping(patterns, filter, hit = true){
   } : null
 }
 
-export function Str({ less, only }, { filter = {} } = {}) {
-  const props = /^[^\s:]+:: .+/;
-  const agent = less?.[0] === true;
-  const human = only?.[0] === true;
-  const fixed = less?.includes("props") ? () => false : props.test.bind(props);
-  const patterns = agent || human ? Object.values(filter) : null;
-  const agentLess = agent ? patterns : null;
-  const humanOnly = human ? patterns : null;
-  const keep = keeping(agentLess || less, filter, false) || keeping(humanOnly || only, filter, true);
-  return { keep, fixed };
-}
-
 // Recursive filtering function for blocks
 function selectBlock(block, keep, fixed) {
   const { content, properties } = block;
@@ -488,6 +476,18 @@ class Stringifier {
 class LogseqPage {
   static parse(text) {
     return Parser.parse(text);
+  }
+
+  static selects({ less, only }, { filter = {} } = {}) {
+    const props = /^[^\s:]+:: .+/;
+    const agent = less?.[0] === true;
+    const human = only?.[0] === true;
+    const fixed = less?.includes("props") ? () => false : props.test.bind(props);
+    const patterns = agent || human ? Object.values(filter) : null;
+    const agentLess = agent ? patterns : null;
+    const humanOnly = human ? patterns : null;
+    const keep = keeping(agentLess || less, filter, false) || keeping(humanOnly || only, filter, true);
+    return { keep, fixed };
   }
 
   static stringify(blocks, keep = null, fixed = null) {
