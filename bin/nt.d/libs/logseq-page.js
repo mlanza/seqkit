@@ -458,16 +458,12 @@ class LogseqPage {
   }
 
   static stringify(blocks, keep = null, fixed = null) {
-    // Apply filtering if keep and fixed functions are provided
-    if (keep && fixed) {
-      const filteredData = blocks
-        .map(block => selectBlock(block, keep, fixed))
-        .filter(block => block !== null);
-      return Stringifier.stringify(filteredData);
-    }
+    // Apply filtering if keep is provided
+    const selectedBlocks = keep ? blocks
+      .map(block => selectBlock(block, keep, fixed || (() => false)))
+      .filter(block => block !== null) : blocks;
 
-    // Default behavior - no filtering
-    return Stringifier.stringify(blocks);
+    return Stringifier.stringify(selectedBlocks);
   }
 }
 
