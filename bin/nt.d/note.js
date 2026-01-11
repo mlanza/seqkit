@@ -355,7 +355,6 @@ function tskWipe(pageName, options) {
     logger.log(`Wiping content from page '${pageName}'...`);
 
     try {
-
       if (!pageName) {
         throw new Error("Page name must be specified");
       }
@@ -373,9 +372,9 @@ function tskWipe(pageName, options) {
       logger.log(`Page exists with UUID: ${pageUuid}`);
 
       // Get all page blocks
-      const pageBlocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
+      const blocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
 
-      if (!pageBlocks || pageBlocks.length === 0) {
+      if (!blocks || blocks.length === 0) {
         resolve({ deletedCount: 0, propertiesCount: 0, alreadyEmpty: true });
         return;
       }
@@ -384,7 +383,7 @@ function tskWipe(pageName, options) {
       const blocksToDelete = [];
       const propertiesBlocksFound = [];
 
-      for (const block of pageBlocks) {
+      for (const block of blocks) {
         let hasRealProperties = false;
 
         if (block.properties && typeof block.properties === 'object' && Object.keys(block.properties).length > 0) {
@@ -910,8 +909,6 @@ function tskGetAllPages({type = "regular", limit = Infinity} = {}){
     .map(take(limit));
 }
 
-
-
 async function wipe(options, pageName){
   try {
     const result = await wipeCommand(pageName, options);
@@ -992,12 +989,12 @@ async function update(options, name){
       logger.log("Prepending content...");
 
       // Get all page blocks to check for properties
-      const pageBlocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
+      const blocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
 
       // Find the last block with properties
       let lastPropertiesBlock = null;
-      if (pageBlocks && Array.isArray(pageBlocks)) {
-        for (const block of pageBlocks) {
+      if (blocks && Array.isArray(blocks)) {
+        for (const block of blocks) {
           if (block.properties && Object.keys(block.properties).length > 0) {
             lastPropertiesBlock = block;
           }
@@ -1027,10 +1024,10 @@ async function update(options, name){
     } else {
       logger.log("Appending content...");
 
-      const pageBlocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
+      const blocks = await callLogseq('logseq.Editor.getPageBlocksTree', [pageName]);
 
-      if (pageBlocks && Array.isArray(pageBlocks) && pageBlocks.length > 0) {
-        const lastBlockUuid = pageBlocks[pageBlocks.length - 1].uuid;
+      if (blocks && Array.isArray(blocks) && blocks.length > 0) {
+        const lastBlockUuid = blocks[blocks.length - 1].uuid;
         logger.log(`Appending after block: ${lastBlockUuid}`);
 
         // Append after last block using sibling:true
@@ -1092,8 +1089,8 @@ async function parse(){
     Deno.exit(1);
   }
 
-  const result = LogseqPage.parse(input);
-  console.log(JSON.stringify(result, null, 2));
+  const blocks = LogseqPage.parse(input);
+  console.log(JSON.stringify(blocks, null, 2));
 }
 
 function pages(options){
