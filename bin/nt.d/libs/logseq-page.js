@@ -3,6 +3,20 @@ function normalizeSeparator(lines) {
   return lines.filter(line => line.trim() !== '');
 }
 
+export function keeping(patterns, filter, hit = true){
+  const miss = !hit;
+  const regexes = (patterns || []).map(what => filter[what] || what).map(pattern => new RegExp(pattern));
+  return regexes.length ? function(text){
+    for(const re of regexes) {
+      if (re.test(text)) {
+        return hit;
+      }
+    }
+    return miss;
+  } : null
+}
+
+
 // Recursive filtering function for blocks
 function selectBlock(block, keep, fixed) {
   const {content, properties} = block;
