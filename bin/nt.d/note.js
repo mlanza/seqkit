@@ -502,40 +502,7 @@ async function incoming(one, only) {
   }
 }
 
-// Recursive filtering function for blocks
-function selectBlock(block, keep, fixed) {
-  const {content, properties} = block;
 
-  const line = content.split("\n")?.[0]; //matching happens against first line only
-  // Test content with and without marker to catch both cases
-  const kept = fixed(line) || keep(line);
-
-  if (!kept) {
-    return null;
-  }
-
-  let filteredChildren = [];
-  if (block.children && Array.isArray(block.children)) {
-    filteredChildren = block.children
-      .map(child => selectBlock(child, keep, fixed))
-      .filter(child => child !== null); // Remove null entries (filtered out children)
-  }
-
-  // If this block doesn't have meaningful content and all children were filtered out, filter this block too
-  const hasContent = content || null;
-  const hasProperties = properties && Object.keys(properties).length > 0;
-  const hasMeaningfulContent = hasContent || hasProperties;
-
-  if (!hasMeaningfulContent && filteredChildren.length === 0) {
-    return null; // This block has no meaningful content and no children after filtering
-  }
-
-  // Keep this block (it doesn't match any patterns)
-  return {
-    ...block,
-    children: filteredChildren
-  };
-}
 
 function normalizeSeparator(parts){
   return (parts.join("\n").trim() + "\n").split("\n");
@@ -590,11 +557,7 @@ function tskGetPage(given, options){
       }
 
       const result = (await callLogseq('logseq.Editor.getPageBlocksTree', [name])) || [];
-      const data = keep ? result
-          .map(block => selectBlock(block, keep, fixed))
-          .filter(block => block !== null) : result;
-
-      const lines = format === "md" ? LogseqPage.stringify(data) : data;
+      const lines = format === "md" ? LogseqPage.stringify(result, keep, fixed) : result;
 
       resolve(lines);
 

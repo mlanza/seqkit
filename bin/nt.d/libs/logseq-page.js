@@ -3,6 +3,41 @@ function normalizeSeparator(lines) {
   return lines.filter(line => line.trim() !== '');
 }
 
+// Recursive filtering function for blocks
+function selectBlock(block, keep, fixed) {
+  const {content, properties} = block;
+
+  const line = content.split("\n")?.[0]; //matching happens against first line only
+  // Test content with and without marker to catch both cases
+  const kept = fixed(line) || keep(line);
+
+  if (!kept) {
+    return null;
+  }
+
+  let filteredChildren = [];
+  if (block.children && Array.isArray(block.children)) {
+    filteredChildren = block.children
+      .map(child => selectBlock(child, keep, fixed))
+      .filter(child => child !== null); // Remove null entries (filtered out children)
+  }
+
+  // If this block doesn't have meaningful content and all children were filtered out, filter this block too
+  const hasContent = content || null;
+  const hasProperties = properties && Object.keys(properties).length > 0;
+  const hasMeaningfulContent = hasContent || hasProperties;
+
+  if (!hasMeaningfulContent && filteredChildren.length === 0) {
+    return null; // This block has no meaningful content and no children after filtering
+  }
+
+  // Keep this block (it doesn't match any patterns)
+  return {
+    ...block,
+    children: filteredChildren
+  };
+}
+
 class Blockifier {
   constructor() {
     this.state = {
@@ -422,7 +457,16 @@ class LogseqPage {
     return Blockifier.parse(input);
   }
 
-  static stringify(blocks) {
+  static stringify(blocks, keep = null, fixed = null) {
+    // Apply filtering if keep and fixed functions are provided
+    if (keep && fixed) {
+      const filteredData = blocks
+        .map(block => selectBlock(block, keep, fixed))
+        .filter(block => block !== null);
+      return Unblockifier.reconst(filteredData);
+    }
+    
+    // Default behavior - no filtering
     return Unblockifier.reconst(blocks);
   }
 }
