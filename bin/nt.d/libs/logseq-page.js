@@ -38,7 +38,7 @@ function selectBlock(block, keep, fixed) {
   };
 }
 
-class Blockifier {
+class Parser {
   constructor() {
     this.state = {
       rootBlocks: [],
@@ -375,13 +375,13 @@ class Blockifier {
     return this.state.rootBlocks;
   }
 
-  static parse(input) {
-    const blockifier = new Blockifier();
-    return blockifier.parse(input);
+  static parse(text) {
+    const parser = new Parser();
+    return parser.parse(text);
   }
 }
 
-class Unblockifier {
+class Stringifier {
   static convert(blocks, level = 0) {
     return this.recursiveConvert(blocks, level);
   }
@@ -393,7 +393,7 @@ class Unblockifier {
 
     blocks.forEach(function(block) {
       const {content, children, properties, preBlock} = block;
-      
+
       // Handle preBlock (headers with properties)
       if (preBlock && properties) {
         // Handle content (header) first
@@ -404,11 +404,11 @@ class Unblockifier {
             lines.push(`${indent}${line}`);
           }
         }
-        
+
         // Add properties after header
         for (const [key, value] of Object.entries(properties)) {
           if (Array.isArray(value)) {
-            const formattedValue = value.map(item => 
+            const formattedValue = value.map(item =>
               item.includes(' ') ? `[[${item}]]` : item
             ).join(', ');
             lines.push(`${indent}${key}:: ${formattedValue}`);
@@ -417,7 +417,7 @@ class Unblockifier {
             lines.push(`${indent}${key}:: ${formattedValue}`);
           }
         }
-        
+
         // Add blank line after properties
         lines.push('');
       }
@@ -440,21 +440,21 @@ class Unblockifier {
       }
 
       if (children && children.length > 0) {
-        lines.push(...Unblockifier.recursiveConvert(children, level + 1));
+        lines.push(...Stringifier.recursiveConvert(children, level + 1));
       }
     });
 
     return lines;
   }
 
-  static reconst(blocks) {
+  static stringify(blocks) {
     return this.recursiveConvert(blocks).join('\n');
   }
 }
 
 class LogseqPage {
-  static parse(input) {
-    return Blockifier.parse(input);
+  static parse(text) {
+    return Parser.parse(text);
   }
 
   static stringify(blocks, keep = null, fixed = null) {
@@ -463,11 +463,11 @@ class LogseqPage {
       const filteredData = blocks
         .map(block => selectBlock(block, keep, fixed))
         .filter(block => block !== null);
-      return Unblockifier.reconst(filteredData);
+      return Stringifier.stringify(filteredData);
     }
-    
+
     // Default behavior - no filtering
-    return Unblockifier.reconst(blocks);
+    return Stringifier.stringify(blocks);
   }
 }
 
