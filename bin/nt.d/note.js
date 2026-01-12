@@ -917,6 +917,10 @@ async function write(options, given) {
 
     const create = !(await exists(path))
 
+    if (!create && !options.overwrite) {
+      throw new Error(`Page '${path}' already exists`);
+    }
+
     file = await Deno.open(path, {
       write: true,
       create,
@@ -1175,7 +1179,8 @@ program
 program
   .command('write')
   .description('Write page from stdin')
-  .arguments("[name]")
+  .arguments("<name>")
+  .option('--overwrite', 'Purge any existing page content (not properties)')
   .action(write);
 
 program
