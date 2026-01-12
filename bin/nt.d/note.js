@@ -909,6 +909,28 @@ async function wipe(options, pageName){
   }
 }
 
+async function write(options, given) {
+  let file
+
+  try {
+    const { path } = await identify(given)
+
+    const create = !(await exists(path))
+
+    file = await Deno.open(path, {
+      write: true,
+      create,
+      truncate: true
+    })
+
+    await Deno.stdin.readable.pipeTo(file.writable)
+  } catch (error) {
+    abort(error)
+  } finally {
+    if (file) file.close()
+  }
+}
+
 async function update(options, name){
   const prependMode = options.prepend || false;
   const overwriteMode = options.overwrite || false;
@@ -1149,6 +1171,12 @@ program
   .option('--debug', 'Enable debug output')
   .option('--overwrite', 'Purge any existing page content (not properties)')
   .action(update);
+
+program
+  .command('write')
+  .description('Write page from stdin')
+  .arguments("[name]")
+  .action(write);
 
 program
   .command('wipe')
