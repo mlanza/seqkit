@@ -1159,7 +1159,7 @@ program
 
 program
   .command('post')
-  .description("Sends content to named page or, if omitted, to today's journal entry")
+  .description(`Sends content to page or, if omitted, to today's journal entry ${PIPED}`)
   .arguments("[name] [content]")
   .option('-a, --append', 'Append mode (the default if omitted)')
   .option('-p, --prepend', 'Prepend mode')
@@ -1175,7 +1175,7 @@ program
 program
   .command('update')
   .hidden()
-  .description('Append blocks on stdin to page')
+  .description(`Append blocks to page from stdin  ${PIPED}`)
   .arguments("[name]")
   .option('-p, --prepend', 'Prepend instead of append')
   .option('--debug', 'Enable debug output')
@@ -1184,7 +1184,7 @@ program
 
 program
   .command('write')
-  .description('Write page from stdin')
+  .description(`Write page from stdin ${PIPED}`)
   .arguments("[name]")
   .option('--overwrite', 'Purge existing page content')
   .action(write);
