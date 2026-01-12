@@ -909,11 +909,17 @@ async function wipe(options, pageName){
   }
 }
 
+async function proposed(given) {
+  return await promise(tskNamed(given || datestamp())) ?? given;
+}
+
 async function write(options, given) {
   let file = null;
 
   try {
-    const { path } = await identify(given)
+    const pageName = await proposed(given);
+
+    const { path } = await identify(pageName);
 
     const create = !(await exists(path))
 
@@ -939,7 +945,7 @@ async function update(options, name){
   const prependMode = options.prepend || false;
   const overwriteMode = options.overwrite || false;
   const logger = getLogger(options.debug || false);
-  const pageName = await promise(tskNamed(name || datestamp())) ?? name;
+  const pageName = await proposed(name);
 
   logger.log(`Page: ${pageName}, Prepend: ${prependMode}, Overwrite: ${overwriteMode}`);
 
@@ -1179,8 +1185,8 @@ program
 program
   .command('write')
   .description('Write page from stdin')
-  .arguments("<name>")
-  .option('--overwrite', 'Purge any existing page content (not properties)')
+  .arguments("[name]")
+  .option('--overwrite', 'Purge existing page content')
   .action(write);
 
 program
