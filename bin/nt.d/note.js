@@ -1456,6 +1456,7 @@ if (import.meta.main) {
     abort();
   } else {
     const replacing = {
+      "--swap" : "--heading=0",
       "--json" : "--format=json",
       "--md" : "--format=md",
       "--agent" : "--less",

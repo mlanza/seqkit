@@ -32,7 +32,7 @@ if ($pipelineArgs.Count -eq 1 -and $pipelineArgs[0].Contains("|")) {
 
 # Build complete command string and capture page content once
 $pageArgsString = $pageArgs | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }
-$pageCommand = "nt page " + ($pageArgsString -join " ") + " --heading=0"
+$pageCommand = "nt page " + ($pageArgsString -join " ") + " --swap"
 $pageContent = pwsh -Command $pageCommand 2>$null
 
 # Check if page exists
