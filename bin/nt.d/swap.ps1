@@ -15,14 +15,25 @@ if ($separatorIndex -eq -1) {
 $pageArgs = $args[0..($separatorIndex - 1)]
 $pipelineArgs = $args[($separatorIndex + 1)..($args.Count - 1)]
 
-if ($pipelineArgs.Count -eq 0) {
+if ($pipelineArgs.Count -eq 0 -or ($pipelineArgs.Count -eq 1 -and $pipelineArgs[0] -eq "--")) {
     Write-Error "Pipeline commands required after --"
     exit 1
 }
 
+# Determine if we have a quoted multi-operation pipeline
+$pipelineString = $null
+if ($pipelineArgs.Count -eq 1 -and $pipelineArgs[0].Contains("|")) {
+    # Single quoted argument containing pipe characters - use as complete pipeline
+    $pipelineString = $pipelineArgs[0]
+} else {
+    # Multiple arguments or single argument without pipes - join with spaces (existing behavior)
+    $pipelineString = $pipelineArgs -join " "
+}
+
 # Build complete command string with temp file for buffering
 $tempFile = [System.IO.Path]::GetTempFileName()
-$fullCommand = "nt page " + ($pageArgs -join " ") + " | " + ($pipelineArgs -join " ") + " | Out-File -FilePath `"$tempFile`" -Encoding utf8"
+$pageArgsString = $pageArgs | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }
+$fullCommand = "nt page " + ($pageArgsString -join " ") + " | " + $pipelineString + " | Out-File -FilePath `"$tempFile`" -Encoding utf8"
 
 # Execute the pipeline directly using pwsh
 pwsh -Command $fullCommand
