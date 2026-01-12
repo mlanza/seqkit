@@ -30,26 +30,18 @@ if ($pipelineArgs.Count -eq 1 -and $pipelineArgs[0].Contains("|")) {
     $pipelineString = $pipelineArgs -join " "
 }
 
-# Build complete command string with temp file for buffering
-$tempFile = [System.IO.Path]::GetTempFileName()
+# Build complete command string and capture output in memory
 $pageArgsString = $pageArgs | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }
-$fullCommand = "nt page " + ($pageArgsString -join " ") + " --heading=0 | " + $pipelineString + " | Out-File -FilePath `"$tempFile`" -Encoding utf8"
+$fullCommand = "nt page " + ($pageArgsString -join " ") + " --heading=0 | " + $pipelineString
 
-# Execute the pipeline directly using pwsh
-pwsh -Command $fullCommand
-
-# Allow pipeline to complete
-Start-Sleep -Milliseconds 300
+# Execute the pipeline and capture output in memory
+$result = pwsh -Command $fullCommand | Out-String
 
 # Extract page name from args for write operation
 $writePageName = $pageArgs[0]
 
-# Read result and write back
-$result = Get-Content -Path $tempFile -Raw
+# Write result back to page
 $result | & nt write $writePageName --overwrite
-
-# Clean up
-Remove-Item $tempFile -Force
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to write page content for: $pageName"
