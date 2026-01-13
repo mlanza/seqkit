@@ -170,6 +170,17 @@ nt page --filter=public Atomic --only
 nt page --filter=public Atomic --less 
 ```
 
+In your shell profile define:
+```zsh
+alias public_page="nt page --filter=public"
+```
+
+So that:
+```zsh
+public_page Atomic --only
+public_page Atomic --less 
+```
+
 ### Querying via Datalog
 
 Logseq's superpower is its [DataScript](https://github.com/tonsky/datascript) spine.  With Datalog queries in easy reach, there's no limit to the queries and custom commands you can build.  The innards build on this.  They can be parameterized.
