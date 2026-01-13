@@ -2,5 +2,5 @@
 $topics = @($input) + @($args)
 $body = $topics | nt seen | nt prereq | nt seen | nt page --less | nt tidy
 $body
-$others = $body | nt wikilinks | nt seen
-$others | Where-Object { $_ -notin ($topics) } | sort | nt props tags situation -r situation --heading=2 | nt sep "# See Also"
+$mentioned = $body | nt wikilinks | nt seen
+$mentioned | Where-Object { $_ -notin ($topics) } | sort | nt props tags situation -r situation --heading=2 | nt sep "# See Also"
