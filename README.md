@@ -112,10 +112,10 @@ You can send in multiple values:
 nt page Atomic --less '^https?://[^)]+$' --less '^[.*](https?://[^)]+)$'
 ```
 
-But typing that will get tedious fast.  Better to define a `filter` table in your config.
+But typing that will get tedious fast.  Better to define in and select from filter tables in config.  Since the default filter is `agent`, let's define it:
 
 ```toml
-[filter]
+[agent]
 props = "^[^\\s:]+::"
 tasks = "^(TODO|DOING|DONE|LATER|NOW|CANCELED|WAITING)"
 links = "^\\s*(?:https?:\\/\\/\\S+|\\[[^\\]\\r\\n]+\\]\\(\\s*https?:\\/\\/[^\\s)]+(?:\\s+\"[^\"\\r\\n]*\")?\\s*\\))\\s*$"
@@ -154,6 +154,13 @@ Alternately, if the use of audience-focused terms aids your remembrance, use
 ```zsh
 nt page Atomic --human # i.e., only
 nt page Atomic --agent # i.e., less
+```
+
+If you have other filtering needs, you can define other filter tables.  To use another, specify it using `--filter`.  It all works the same except for your signaling a different source of truth.
+
+```zsh
+nt page Atomic --only --filter=public
+nt page Atomic --less --filter=public
 ```
 
 ### Querying via Datalog

@@ -1141,7 +1141,7 @@ program
   .option('--json', 'Output JSON format')
   .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 1})
   .option('--vacant', 'Include vacant entries')
-  .option('--filter [filter-name:string]', 'Select named filter from config', { default: "filter" })
+  .option('--filter [table:string]', 'Select filter table from config', { default: "agent" })
   .option('-l, --less [patterns:string]', 'Less content matching regex patterns', { collect: true })
   .option('-o, --only [patterns:string]', 'Only content matching regex patterns', { collect: true })
   .example("List wikilinks on a page", "nt page Mission | nt wikilinks")
