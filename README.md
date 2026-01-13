@@ -146,18 +146,18 @@ nt page Atomic --less tasks --less links
 
 Some of the examples in the tool `--help` anticipate these defintions.
 
-This command is for the **human** and includes only what's normally filtered out:
+This displays content for the **human** and shows what'd normally be filtered out:
 ```zsh
 nt page Atomic --only
 ```
 
-This one is for the **agent** and includes all but the noise:
+This one is for the **agent** and filters out that noise:
 ```zsh
 nt page Atomic --less
 ```
-Internally, this what `about` does to provide an agent with trimmed context.
+Internally, this what `about` does to faciliate a clean agent hand-off.
 
-Alternately, if the use of audience-focused terms aids your remembrance, use
+The following option flags are synonyms — their audience-focused terms: memory aids.
 ```zsh
 nt page Atomic --human # i.e., only
 nt page Atomic --agent # i.e., less
