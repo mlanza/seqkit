@@ -170,7 +170,7 @@ nt page --filter=public Atomic --only
 nt page --filter=public Atomic --less 
 ```
 
-In your shell profile define:
+If desired, in your shell profile define:
 ```zsh
 alias public_page="nt page --filter=public"
 ```
