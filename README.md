@@ -172,13 +172,13 @@ nt page --filter=public Atomic --less
 
 If desired, in your shell profile define:
 ```zsh
-alias public_page="nt page --filter=public"
+alias pg_public="nt page --filter=public"
 ```
 
 So that:
 ```zsh
-public_page Atomic --only
-public_page Atomic --less 
+pg_public Atomic --only
+pg_public Atomic --less 
 ```
 
 ### Querying via Datalog
