@@ -820,23 +820,29 @@ function qryPage(name){
   return qry(`[:find (pull ?p [*]) :where [?p :block/original-name "$1"]]`, name);
 }
 
-function fmtProps({format}, propName = null){
+function fmtProps(options, selected = []){
   return function([name, results]){
-    const pageData = results[0]?.[0] || null;
+    const ptv = results[0]?.[0]?.["properties-text-values"];
+    const required = !options.required || options.required.reduce(function(has, key){
+      return has && !!ptv?.[key];
+    }, true);
 
-    if (format === 'json') {
-      return [name, pageData ? results : null];
-    } else if (format === 'md') {
+    if (options.format === 'json') {
+      return [name, ptv ? results : null];
+    } else if (options.format === 'md') {
       try {
-        const props = propName ? pageData?.properties?.[propName] || null : Object.entries(pageData?.["properties-text-values"] ?? {}).map(function([key, vals]){
-          return `${key}:: ${vals}`;
+        const unlabeled = options.unlabeled || [];
+        const props = Object.entries(ptv || {}).filter(function([key, vals]){
+          return selected.length === 0 || selected.includes(key);
+        }).map(function([key, vals]){
+          return unlabeled.includes(key) ? vals : `${key}:: ${vals}`;
         });
-        return [name, props.length? props : null];
+        return [name, required && props.length ? props : null];
       } catch {
         return [name, null];
       }
     } else {
-      throw new Error(`Unknown format: ${format}`);
+      throw new Error(`Unknown format: ${options.format}`);
     }
   }
 }
@@ -863,10 +869,10 @@ function fmtBody({heading, format, vacant}){
 }
 
 function props(options){
-  return function(given, propName = null){
+  return function(given, ...properties){
     return given ? tskNamed(given).
       chain(Task.juxt(Task.of, qryPage)).
-      map(fmtProps(options, propName)).
+      map(fmtProps(options, properties)).
       map(fmtBody(options)) : Task.of(null);
   }
 }
@@ -1244,9 +1250,10 @@ program
 program
   .command('props')
   .description(`Get page properties ${PIPEABLE}`)
-  .arguments(demand("name", "property"))
+  .arguments("[name] [properties...]")
   .option('-f, --format <type:string>', 'Output format (md|json) (default: "md")', {default: 'md'})
-  .option('--desc', "With description")
+  .option('-u, --unlabeled <string>', "Drop the property label", {collect: true})
+  .option('-r, --required <string>', "Required property", {collect: true})
   .option('--json', 'Output JSON format')
   .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 1})
   .option('--vacant', 'Include vacant entries')
