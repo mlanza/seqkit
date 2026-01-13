@@ -7,7 +7,10 @@ $prompt
 if ($LASTEXITCODE -eq 0) {
   if ($wikilinks) {
     write-host "---"
-    $wikilinks | nt seen | nt page --less --heading=2 | nt tidy
+    $copy = $wikilinks | nt seen | nt page --less --heading=2 | nt tidy
+    $copy
+    write-host "---"
+    $copy | nt wikilinks | nt seen | nt props -r description -u description --heading=2
   }
 } else {
   $code = $LASTEXITCODE
