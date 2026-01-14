@@ -1452,6 +1452,7 @@ program
       })
       .command("file", new Command()
         .description("Show the path to the config file")
+        .example("Display config", `nt config file | xargs cat`)
         .action(function(){
           console.log(NOTE_CONFIG);
         }))
@@ -1459,18 +1460,6 @@ program
         .description("Show the path to the Logseq repo")
         .action(function(){
           console.log(config.logseq.repo);
-        }))
-      .command("filter", new Command()
-        .description("Lists defined filters for use with --less and --only `page` options")
-        .action(function(){
-          Object.entries(config.filter ?? {})
-            .forEach(([key, value]) => console.log(key, " => ", value));
-        }))
-      .command("query", new Command()
-        .description("Lists defined queries")
-        .action(function(){
-          Object.entries(config.query ?? {})
-            .forEach(([key, value]) => console.log(key, " => ", value));
         })));
 
 if (import.meta.main) {
