@@ -32,7 +32,7 @@ for ($i = 0; $i -lt $otherArgs.Length; $i++) {
 
 # Validate required parameters
 if (-not $dest) {
-  Write-Error "Usage: copy.ps1 <pageName> --dest <destination> [--overwrite] [--heading <level>] [other args...]"
+  Write-Error "Usage: export.ps1 <pageName> --dest <destination> [--overwrite] [--heading <level>] [other args...]"
   exit 1
 }
 

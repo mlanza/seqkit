@@ -1190,16 +1190,8 @@ program
   .command('write')
   .description(`Write page from stdin`)
   .arguments("<name>")
-  .option('--overwrite', 'Purge existing page content')
+  .option('--overwrite', 'Overwrite existing page content')
   .action(write);
-
-program
-  .command('copy')
-  .description(`Copy page to destination directory`)
-  .arguments("<name>")
-  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 0})
-  .option('--dest', 'The directory to write the file')
-  .option('--overwrite', 'Overwrite if file already exists');
 
 program
   .command('wipe')
@@ -1207,6 +1199,14 @@ program
   .arguments(demand("name"))
   .option('--debug', 'Enable debug output')
   .action(wipe);
+
+program
+  .command('export')
+  .description(`Export page content to destination`)
+  .arguments("<name>")
+  .option('--heading <level:number>', 'Heading level (0-5, where 0=no heading)', {default: 0})
+  .option('--dest', 'The directory (with or without filename) to write the file')
+  .option('--overwrite', 'Overwrite if file already exists');
 
 program
   .command('tags')
