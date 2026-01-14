@@ -690,7 +690,7 @@ function search(term){
 }
 
 function tskPath(name){
-  return tskIdentify(name).map(({path}) => orientSlashes(path));
+  return tskIdentify(name).map(({path}) => path);
 }
 
 function tskNamed(id, options = {}){
