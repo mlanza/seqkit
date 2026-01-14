@@ -696,9 +696,7 @@ function tskNamed(id, options = {}){
 }
 
 function constantly(f){
-  return function(){
-    return f;
-  }
+  return () => f;
 }
 
 function tskPagePath(name){
