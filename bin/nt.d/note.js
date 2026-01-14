@@ -319,7 +319,7 @@ const callLogseq = comp(promise, tskLogseq);
 
 function tskGetPath(name){
   return tskLogseq('logseq.Editor.getPage', [name]).chain(function({file}){
-    const {id} = file;
+    const {id} = file || {};
     return id ? qry("[:find (pull ?fid [:file/path :file/name]) :in $ ?fid]", id) : Task.rejected(new Error(`Cannot find file id for "${name}".`));
   }).map((result) => result?.[0]?.[0]?.path).map(file => `${config.logseq.repo}/${file}`).map(orientSlashes);
 }
