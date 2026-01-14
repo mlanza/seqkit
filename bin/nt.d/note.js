@@ -239,7 +239,7 @@ function formatYYYYMMDD(n) {
 
 async function getFilePath(day, name){
   try {
-    return await promise(tskGetPath(name));
+    return await promise(tskPath(name));
   } catch {
     const where = day ? "journals" : "pages";
     const normalized = day ? formatYYYYMMDD(day) : encode(name.trim());
@@ -317,11 +317,11 @@ function tskLogseq(method, args){
 
 const callLogseq = comp(promise, tskLogseq);
 
-function tskGetPath(name){
-  return tskLogseq('logseq.Editor.getPage', [name]).chain(function({file}){
-    const {id} = file || {};
+function tskPath(name){
+  return name ?  tskLogseq('logseq.Editor.getPage', [name]).chain(function(result){
+    const id = result?.file?.id;
     return id ? qry("[:find (pull ?fid [:file/path :file/name]) :in $ ?fid]", id) : Task.rejected(new Error(`Cannot find file id for "${name}".`));
-  }).map((result) => result?.[0]?.[0]?.path).map(file => `${config.logseq.repo}/${file}`).map(orientSlashes);
+  }).map((result) => result?.[0]?.[0]?.path).map(file => `${config.logseq.repo}/${file}`).map(orientSlashes) : Task.of(null);
 }
 
 function qryPrerequisites(name){
@@ -687,10 +687,6 @@ function search(term){
         resolve(pageNames);
       });
   });
-}
-
-function tskPath(name){
-  return tskIdentify(name).map(({path}) => path);
 }
 
 function tskNamed(id, options = {}){
